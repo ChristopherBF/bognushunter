@@ -11,7 +11,7 @@ const user = await getCurrentUser();
 
 // If no user is authenticated, redirect to login
 if (!user) {
-  return Astro.redirect('/login');
+  return Astro.redirect('/bognushunter/login');
 }
 
 // We'll only reach here if the user is authenticated

@@ -12,7 +12,7 @@ const user = await getCurrentUser();
 
 // Admin-specific check - redirect if not authenticated
 if (!user) {
-  return Astro.redirect('/login');
+  return Astro.redirect('/bognushunter/login');
 }
 
 // Here you could add additional checks for admin role if needed
