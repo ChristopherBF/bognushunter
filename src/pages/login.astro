@@ -7,7 +7,7 @@ const authenticated = await isAuthenticated();
 
 // If already authenticated, redirect to home page and don't render the rest
 if (authenticated) {
-  return Astro.redirect('/');
+  return Astro.redirect('/bognushunt');
 }
 
 // Only render the login page if not authenticated
