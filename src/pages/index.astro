@@ -1,0 +1,26 @@
+---
+import Layout from '../layouts/Layout.astro';
+import SuggestionForm from '../components/User/SuggestionForm.vue';
+import { getCurrentUser } from '../lib/auth';
+
+// Default event ID - in a real app, you would fetch the latest event
+const defaultEventId = "123e4567-e89b-12d3-a456-426614174000";
+
+// Get the current user (or null if not authenticated)
+const user = await getCurrentUser();
+
+// If no user is authenticated, redirect to login
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// We'll only reach here if the user is authenticated
+const eventId = Astro.props.eventId || defaultEventId;
+---
+
+<Layout title="Suggest Items">
+  <div class="max-w-2xl mx-auto">
+    <h1 class="text-2xl font-bold mb-6">Suggest Items</h1>
+    <SuggestionForm eventId={eventId} userId={user.id} />
+  </div>
+</Layout>

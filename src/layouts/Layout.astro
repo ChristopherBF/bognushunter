@@ -1,0 +1,83 @@
+---
+import { getSupabaseClient } from '../lib/supabase';
+import { isAuthenticated, getCurrentUser } from '../lib/auth';
+
+interface Props {
+  title: string;
+  isAdmin?: boolean;
+  skipAuth?: boolean;
+}
+
+const { title, isAdmin, skipAuth = false } = Astro.props;
+
+// Check for authentication
+let authenticated = false;
+let user = null;
+
+if (!skipAuth) {
+  authenticated = await isAuthenticated();
+  user = await getCurrentUser();
+  
+  // If not authenticated, redirect to login
+  if (!authenticated && Astro.url.pathname !== '/login' && Astro.url.pathname !== '/auth/callback') {
+    return Astro.redirect('/login');
+  }
+}
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+  </head>
+  <body class="bg-gray-100">
+    <nav class="bg-blue-600 text-white p-4">
+      <div class="container mx-auto flex justify-between items-center">
+        <h1 class="text-xl font-bold">Suggestion App</h1>
+        {authenticated && (
+          <div class="flex gap-4 items-center">
+            {isAdmin ? (
+              <a href="/admin" class="hover:underline">Admin Dashboard</a>
+            ) : (
+              <a href="/" class="hover:underline">Suggest Items</a>
+            )}
+            <div class="flex items-center gap-2">
+              <span class="text-sm">Welcome, {user?.user_metadata?.name || user?.email || 'User'}</span>
+              <button
+                id="logout-button"
+                class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </nav>
+    <main class="container mx-auto p-6">
+      <slot />
+    </main>
+  </body>
+</html>
+
+<script>
+  import { signOut } from '../lib/auth';
+
+  document.addEventListener('DOMContentLoaded', () => {
+    const logoutButton = document.getElementById('logout-button');
+    
+    if (logoutButton) {
+      logoutButton.addEventListener('click', async () => {
+        try {
+          await signOut();
+          window.location.href = '/login';
+        } catch (error) {
+          console.error('Logout error:', error);
+        }
+      });
+    }
+  });
+</script>

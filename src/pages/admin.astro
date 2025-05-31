@@ -1,0 +1,28 @@
+---
+import Layout from '../layouts/Layout.astro';
+import AdminDashboard from '../components/Admin/AdminDashboard.vue';
+import { getCurrentUser } from '../lib/auth';
+import { getSupabaseClient } from '../lib/supabase';
+
+// Default event ID
+const defaultEventId = "123e4567-e89b-12d3-a456-426614174000";
+
+// Get the current user
+const user = await getCurrentUser();
+
+// Admin-specific check - redirect if not authenticated
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Here you could add additional checks for admin role if needed
+// For example, checking if the user's email is in an admin list
+// or if they have a specific claim in their JWT
+
+// Only proceed if user is authenticated
+const eventId = Astro.props.eventId || defaultEventId;
+---
+
+<Layout title="Admin Dashboard" isAdmin>
+  <AdminDashboard eventId={eventId} userId={user.id} />
+</Layout>

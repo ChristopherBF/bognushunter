@@ -1,0 +1,81 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { supabase } from '../lib/supabase';
+
+// Get the current session directly
+const { data: { session } } = await supabase.auth.getSession();
+const user = session?.user;
+
+// Also try getting all active sessions
+const { data } = await supabase.auth.getUser();
+const userData = data?.user;
+---
+
+<Layout title="Debug Authentication">
+  <div class="max-w-3xl mx-auto my-10 p-6 bg-white rounded-lg shadow">
+    <h1 class="text-2xl font-bold mb-6">Authentication Debug</h1>
+    
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">Session Information</h2>
+      <pre class="bg-gray-100 p-4 rounded overflow-auto">
+        {JSON.stringify(session, null, 2)}
+      </pre>
+    </div>
+    
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">User Information</h2>
+      <pre class="bg-gray-100 p-4 rounded overflow-auto">
+        {JSON.stringify(user, null, 2)}
+      </pre>
+    </div>
+
+    <div class="mb-6">
+      <h2 class="text-xl font-semibold mb-2">User Data (Alternative Method)</h2>
+      <pre class="bg-gray-100 p-4 rounded overflow-auto">
+        {JSON.stringify(userData, null, 2)}
+      </pre>
+    </div>
+    
+    <div class="mt-8 flex space-x-4">
+      <a href="/" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+        Go to Home
+      </a>
+      <button 
+        id="check-auth-btn"
+        class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600"
+      >
+        Check Auth State
+      </button>
+      <button 
+        id="sign-out-btn"
+        class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+      >
+        Sign Out
+      </button>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { supabase } from '../lib/supabase';
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    const checkAuthBtn = document.getElementById('check-auth-btn');
+    const signOutBtn = document.getElementById('sign-out-btn');
+    
+    if (checkAuthBtn) {
+      checkAuthBtn.addEventListener('click', async () => {
+        const { data, error } = await supabase.auth.getSession();
+        console.log('Current session:', data.session);
+        alert(data.session ? 'Authenticated!' : 'Not authenticated!');
+      });
+    }
+    
+    if (signOutBtn) {
+      signOutBtn.addEventListener('click', async () => {
+        await supabase.auth.signOut();
+        window.location.reload();
+      });
+    }
+  });
+</script>
