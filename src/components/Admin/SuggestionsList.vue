@@ -19,7 +19,7 @@
         >
           <div class="flex-1">
             <div class="flex items-center justify-between">
-              <span>{{ suggestion.item }}</span>
+              <span>{{ formatItemName(suggestion.item) }}</span>
               <span class="text-sm text-gray-600">{{ suggestion.count }} suggestions</span>
             </div>
           </div>
@@ -42,37 +42,13 @@
           class="p-3 border rounded-lg hover:bg-gray-50"
         >
           <div class="flex items-center justify-between">
-            <span>{{ huntItem.item }}</span>
-            <div class="flex items-center gap-4">
-              <input
-                type="number"
-                v-model="huntItem.wager"
-                class="w-24 px-2 py-1 border rounded"
-                @input="updateHuntItem(huntItem)"
-              />
-              <input
-                type="number"
-                v-model="huntItem.result"
-                class="w-24 px-2 py-1 border rounded"
-                @input="updateHuntItem(huntItem)"
-              />
-              <div class="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  v-model="huntItem.bonus"
-                  class="w-4 h-4"
-                  @change="updateHuntItem(huntItem)"
-                />
-                <label>Bonus</label>
-                <input
-                  type="checkbox"
-                  v-model="huntItem.super_bonus"
-                  class="w-4 h-4"
-                  @change="updateHuntItem(huntItem)"
-                />
-                <label>Super Bonus</label>
-              </div>
-            </div>
+            <span>{{ formatItemName(huntItem.item) }}</span>
+            <button
+              @click="removeFromHunt(huntItem.id)"
+              class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+            >
+              Remove
+            </button>
           </div>
         </div>
       </div>
@@ -81,8 +57,9 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
+import { ref, onMounted, computed, onUnmounted } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
+import { formatItemName } from '../../lib/utils';
 
 // Debug flag
 const DEBUG = true;
@@ -270,7 +247,7 @@ const addToHunt = async (suggestion: any) => {
     const { error } = await supabase.from('hunt_items').insert({
       event_id: props.eventId,
       suggestion_id: suggestion.id,
-      wager: 0,
+      wager: 1,
       result: 0,
       bonus: false,
       super_bonus: false,
@@ -324,7 +301,7 @@ const addSelectedToHunt = async () => {
     const itemsToInsert = newItems.map(suggestion => ({
       event_id: props.eventId,
       suggestion_id: suggestion.id,
-      wager: 0,
+      wager: 1,
       result: 0,
       bonus: false,
       super_bonus: false,
@@ -348,6 +325,28 @@ const addSelectedToHunt = async () => {
     log('Selected suggestions added to hunt list');
   } catch (e) {
     console.error('Exception during adding selected suggestions to hunt list:', e);
+  }
+};
+
+// Remove a hunt item
+const removeFromHunt = async (id: string) => {
+  try {
+    log('Removing hunt item:', id);
+    
+    const { error } = await supabase
+      .from('hunt_items')
+      .delete()
+      .eq('id', id);
+
+    if (error) {
+      console.error('Error removing hunt item:', error);
+      return;
+    }
+    
+    await fetchHuntList();
+    log('Hunt item removed:', id);
+  } catch (e) {
+    console.error('Exception during removing hunt item:', e);
   }
 };
 

@@ -107,7 +107,8 @@ const handleCreateEvent = async (e?: Event) => {
     const { data, error } = await supabase.from('suggestion_events').insert([
       {
         date: new Date().toISOString(),
-        created_by: props.userId
+        created_by: props.userId,
+        starting_balance: 0
       }
     ]);
 
@@ -176,12 +177,14 @@ const formatDate = (dateString: string) => {
 // Changed to navigate to a summary page instead of showing inline
 const viewSummary = (eventId: string) => {
   log('Navigating to summary page for event:', eventId);
-  window.location.href = `/summary/${eventId}`;
+  const basePath = import.meta.env.BASE_URL || '/';
+  window.location.href = `${basePath}summary/${eventId}`;
 };
 
 const viewHuntList = (eventId: string) => {
   log('Navigating to hunt list page for event:', eventId);
-  window.location.href = `/hunt-list/${eventId}`;
+  const basePath = import.meta.env.BASE_URL || '/';
+  window.location.href = `${basePath}huntlist/${eventId}`;
 };
 
 // Share suggestion link function

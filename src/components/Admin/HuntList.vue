@@ -68,7 +68,17 @@
           </div>
           
           <!-- Completion status -->
-          <div class="mt-2">
+          <div class="mt-2 flex items-center">
+            <div class="flex items-center gap-2 mr-4">
+              <input
+                type="checkbox"
+                v-model="huntItem.completed"
+                class="w-4 h-4"
+                @change="updateHuntItem(huntItem)"
+              />
+              <label class="text-sm">Mark as Completed</label>
+            </div>
+            
             <span 
               :class="[
                 'px-2 py-1 text-xs rounded-full', 
@@ -109,7 +119,7 @@
       <!-- Summary section -->
       <div v-if="huntList.length > 0" class="mt-8 p-4 border rounded-lg bg-gray-50">
         <h3 class="text-lg font-semibold mb-2">Hunt Summary</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
           <div class="p-3 bg-white rounded shadow">
             <div class="text-sm text-gray-600">Total Items</div>
             <div class="text-xl font-bold">{{ huntList.length }}</div>
@@ -138,6 +148,29 @@
             </div>
           </div>
         </div>
+        
+        <div class="flex items-center gap-4 p-3 bg-white rounded shadow mb-4">
+          <div class="flex-1 flex items-center gap-2">
+            <label class="text-sm text-gray-600">Starting Balance:</label>
+            <input
+              type="number"
+              v-model="startingBalance"
+              class="w-32 px-2 py-1 border rounded"
+              @input="updateStartingBalance"
+              placeholder="Enter starting balance"
+            />
+          </div>
+          <div class="flex-1 flex items-center gap-2">
+            <label class="text-sm text-gray-600">Current Balance:</label>
+            <input
+              type="number"
+              v-model="currentBalance"
+              class="w-32 px-2 py-1 border rounded"
+              @input="updateCurrentBalance"
+              placeholder="Enter current balance"
+            />
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -145,46 +178,55 @@
 
 <script setup lang="ts">
 import { ref, onMounted, computed } from 'vue';
-import { getSupabaseClient } from '../../lib/supabase';
+import { getSupabaseClient, supabase } from '../../lib/supabase';
+import { formatItemName } from '../../lib/utils';
 
 // Debug flag
 const DEBUG = true;
-const log = (...args: any[]) => DEBUG && console.log('[HuntList]', ...args);
 
-log('Component script initialization');
-
+// Props
 const props = defineProps<{
   eventId: string;
   userId: string;
 }>();
 
-log('Props received:', props);
-
-// Initialize Supabase client
-const supabase = getSupabaseClient();
-
-// Reactive state
-const huntList = ref<any[]>([]);
+// State
 const loading = ref(true);
+const huntList = ref<any[]>([]);
+const startingBalance = ref(0);
+const currentBalance = ref<number | null>(null);
+
+// Logging function
+const log = (...args: any[]) => {
+  if (DEBUG) {
+    console.log('[HuntList]', ...args);
+  }
+};
 
 // Get the base path for navigation
 const basePath = computed(() => import.meta.env.BASE_URL || '/');
-
-// Format item name to be more readable
-const formatItemName = (name: string) => {
-  if (!name) return '';
-  return name
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
 
 // Fetch hunt list for the selected event
 const fetchHuntList = async () => {
   try {
     log('Fetching hunt list for event:', props.eventId);
     loading.value = true;
+    
+    // First fetch event details to get starting balance and current balance
+    const { data: eventData, error: eventError } = await supabase
+      .from('suggestion_events')
+      .select('starting_balance, current_balance')
+      .eq('id', props.eventId)
+      .single();
+      
+    if (eventError) {
+      console.error('Error fetching event details:', eventError);
+    } else if (eventData) {
+      startingBalance.value = eventData.starting_balance || 0;
+      currentBalance.value = eventData.current_balance || null;
+      log('Starting balance:', startingBalance.value);
+      log('Current balance:', currentBalance.value);
+    }
     
     // First fetch hunt items without joins to avoid GROUP BY errors
     const { data: huntItemsData, error: huntItemsError } = await supabase
@@ -243,12 +285,6 @@ const updateHuntItem = async (item: any) => {
   try {
     log('Updating hunt item:', item.id);
     
-    // Check if item should be marked as completed
-    const isCompleted = 
-      item.wager !== null && 
-      item.result !== null && 
-      (item.bonus || item.super_bonus);
-    
     const { error } = await supabase
       .from('hunt_items')
       .update({
@@ -256,7 +292,7 @@ const updateHuntItem = async (item: any) => {
         result: item.result,
         bonus: item.bonus,
         super_bonus: item.super_bonus,
-        completed: isCompleted
+        completed: item.completed
       })
       .eq('id', item.id);
 
@@ -291,6 +327,53 @@ const removeHuntItem = async (itemId: string) => {
     log('Hunt item removed:', itemId);
   } catch (e) {
     console.error('Exception during hunt item removal:', e);
+  }
+};
+
+// Update starting balance for the event
+const updateStartingBalance = async () => {
+  try {
+    log('Updating starting balance for event:', props.eventId);
+    
+    const { error } = await supabase
+      .from('suggestion_events')
+      .update({
+        starting_balance: startingBalance.value
+      })
+      .eq('id', props.eventId);
+      
+    if (error) {
+      console.error('Error updating starting balance:', error);
+      return;
+    }
+    
+    log('Starting balance updated for event:', props.eventId);
+  } catch (e) {
+    console.error('Exception during starting balance update:', e);
+  }
+};
+
+// Update current balance for the event
+const updateCurrentBalance = async () => {
+  try {
+    log('Updating current balance for event:', props.eventId);
+    
+    // Update current_balance directly on the event
+    const { error } = await supabase
+      .from('suggestion_events')
+      .update({
+        current_balance: currentBalance.value
+      })
+      .eq('id', props.eventId);
+      
+    if (error) {
+      console.error('Error updating current balance:', error);
+      return;
+    }
+    
+    log('Current balance updated for event:', props.eventId);
+  } catch (e) {
+    console.error('Exception during current balance update:', e);
   }
 };
 

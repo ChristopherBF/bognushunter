@@ -50,6 +50,17 @@ if (eventId) {
     console.error('Exception during event fetch:', e);
   }
 }
+
+// Format item name to be more readable
+const formatItemName = (name) => {
+  if (!name) return '';
+  return name
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
 ---
 
 <Layout title={`Hunt List - ${eventDate}`}>
