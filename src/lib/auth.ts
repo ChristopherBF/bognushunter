@@ -1,52 +1,76 @@
-import { supabase } from './supabase';
+import { supabase, getSupabaseClient } from './supabase'; // supabase is browser client
+import type { AstroCookies } from 'astro';
 
+// Runs on CLIENT-SIDE (e.g., in a <script> tag or a .ts file imported by one)
 export async function signInWithTwitch() {
-    console.log(`${window.location.origin}/auth/callback`)
+  console.log('[auth.ts] Attempting to sign in with Twitch (client-side)...');
+  // Uses the browser client directly
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: 'twitch',
     options: {
-      redirectTo: `${window.location.origin}/auth/callback`
+      // window.location.origin is only available on client
+      redirectTo: `${window.location.origin}/bognushunter/callback`
     }
   });
-  console.log(data)
-  if (error) throw error;
+  if (error) {
+    console.error('[auth.ts] Error in signInWithTwitch:', error.message);
+    throw error;
+  }
   return data;
 }
 
+// Can run on CLIENT-SIDE. If server-side signout is needed, it would require cookies.
 export async function signOut() {
+  console.log('[auth.ts] Attempting to sign out (client-side)...');
+  // Uses the browser client
   const { error } = await supabase.auth.signOut();
-  if (error) throw error;
+  if (error) {
+    console.error('[auth.ts] Error in signOut:', error.message);
+    throw error;
+  }
 }
 
-export async function getCurrentUser() {
-    console.log("getCurrentUser")
-  // First try to get the session
-  const { data: { session } } = await supabase.auth.getSession();
+// Runs on SERVER-SIDE (Astro frontmatter) or CLIENT-SIDE.
+// `cookies` MUST be provided if called from server-side.
+export async function getCurrentUser(cookies?: AstroCookies) {
+  console.log(`[auth.ts] Attempting to get current user (cookies ${cookies ? 'provided' : 'not provided'})...`);
+  const client = getSupabaseClient(cookies); // Gets server or browser client
+
+  const { data: { session }, error: sessionError } = await client.auth.getSession();
   
-  // If we have a session, return the user
+  if (sessionError) {
+    console.error('[auth.ts] Error getting session:', sessionError.message);
+  }
+  // console.log('[auth.ts] Session from getSession():', session); // Can be too verbose
+
   if (session) {
+    // console.log('[auth.ts] User found in session:', session.user); // Can be too verbose
     return session.user;
   }
   
-  // If no session, try to get the user directly as a fallback
-  const { data: { user } } = await supabase.auth.getUser();
+  // console.log('[auth.ts] No session. Trying client.auth.getUser() as fallback...');
+  const { data: { user }, error: userError } = await client.auth.getUser();
+  if (userError) {
+    // This is expected if no one is logged in.
+    // console.error('[auth.ts] Error getting user via getUser():', userError.message);
+  }
+  // console.log('[auth.ts] User from getUser():', user); // Can be too verbose
   return user;
 }
 
-export async function isAuthenticated() {
-    console.log("isAuthenticated")
-  const user = await getCurrentUser();
+// Runs on SERVER-SIDE or CLIENT-SIDE.
+export async function isAuthenticated(cookies?: AstroCookies) {
+  const user = await getCurrentUser(cookies);
   return !!user;
 }
 
-export async function requireAuth(astroObj: any) {
-    console.log("requireAuth")
-  const { redirect } = astroObj;
-  const user = await getCurrentUser();
-  
+// Runs on SERVER-SIDE (Astro frontmatter).
+export async function requireAuth(astroContext: { cookies: AstroCookies, redirect: (path: string) => any }) {
+  const { cookies, redirect } = astroContext;
+  const user = await getCurrentUser(cookies); // Pass cookies here
+  console.log('[auth.ts] User from requireAuth (server-side):', user ? user.id : null);
   if (!user) {
-    return redirect('/login');
+    return redirect('/bognushunter/login');
   }
-  
-  return { user };
+  return { user }; // Return user if authenticated
 }

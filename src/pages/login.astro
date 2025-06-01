@@ -1,16 +1,14 @@
 ---
 import Layout from '../layouts/Layout.astro';
-import { isAuthenticated } from '../lib/auth';
+import { getCurrentUser } from '../lib/auth';
 
-// Check if the user is already authenticated
-const authenticated = await isAuthenticated();
+// Check if the user is already authenticated using direct Supabase
+const user = await getCurrentUser(Astro.cookies);
 
-// If already authenticated, redirect to home page and don't render the rest
-if (authenticated) {
+// If already authenticated, redirect to home page
+if (user) {
   return Astro.redirect('/bognushunter');
 }
-
-// Only render the login page if not authenticated
 ---
 
 <Layout title="Login">

@@ -17,11 +17,9 @@ let user = null;
 if (!skipAuth) {
   authenticated = await isAuthenticated();
   user = await getCurrentUser();
-  
-  // If not authenticated, redirect to login
-  if (!authenticated && Astro.url.pathname !== '/login' && Astro.url.pathname !== '/auth/callback') {
-    return Astro.redirect('/login');
-  }
+
+  console.log('Authenticated:', authenticated);
+  console.log('User:', user);
 }
 ---
 
@@ -73,7 +71,7 @@ if (!skipAuth) {
       logoutButton.addEventListener('click', async () => {
         try {
           await signOut();
-          window.location.href = '/login';
+          window.location.href = '/bognushunter/login';
         } catch (error) {
           console.error('Logout error:', error);
         }
