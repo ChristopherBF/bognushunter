@@ -16,8 +16,9 @@ if (!user) {
 // Default event ID
 const defaultEventId = "123e4567-e89b-12d3-a456-426614174000";
 const eventId = Astro.props.eventId || defaultEventId;
+console.log('[admin.astro] Event ID:', Astro.props);
 ---
 
 <Layout title="Admin Dashboard" isAdmin>
-  <AdminDashboard eventId={eventId} userId={user.id} />
+  <AdminDashboard client:load eventId={eventId} userId={user.id} />
 </Layout>

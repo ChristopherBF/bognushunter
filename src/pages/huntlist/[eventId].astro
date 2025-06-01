@@ -1,0 +1,76 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getSupabaseClient } from '../../lib/supabase';
+import HuntList from '../../components/Admin/HuntList.vue';
+
+// Get the event ID from the URL parameters
+const { eventId } = Astro.params;
+
+// Check if user is authenticated
+const supabase = getSupabaseClient(Astro.cookies);
+const { data: { user } } = await supabase.auth.getUser();
+
+console.log('[huntlist.astro] User from Supabase:', user ? 'authenticated' : 'not authenticated');
+console.log('[huntlist.astro] Event ID:', eventId);
+
+// Redirect to login if not authenticated
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Get user ID for passing to component
+const userId = user.id;
+
+// Get the base path for navigation
+const basePath = import.meta.env.BASE_URL || '/';
+
+// Get event details
+let eventDate = '';
+if (eventId) {
+  try {
+    const { data: eventData, error: eventError } = await supabase
+      .from('suggestion_events')
+      .select('date')
+      .eq('id', eventId)
+      .single();
+      
+    if (eventError) {
+      console.error('Error fetching event:', eventError);
+    } else if (eventData) {
+      const date = new Date(eventData.date);
+      eventDate = date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'short', 
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+  } catch (e) {
+    console.error('Exception during event fetch:', e);
+  }
+}
+---
+
+<Layout title={`Hunt List - ${eventDate}`}>
+  <main class="container mx-auto px-4 py-8">
+    <div class="flex justify-between items-center mb-6">
+      <h1 class="text-2xl font-bold">Hunt List - {eventDate}</h1>
+      <a href={`${basePath}admin`} class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
+        Back to Admin
+      </a>
+    </div>
+    
+    {eventId ? (
+      <HuntList 
+        client:load 
+        eventId={eventId} 
+        userId={userId}
+      />
+    ) : (
+      <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
+        <p>No event selected. Please select an event from the <a href={`${basePath}admin`} class="underline">Admin Dashboard</a>.</p>
+      </div>
+    )}
+  </main>
+</Layout>

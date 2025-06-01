@@ -1,0 +1,321 @@
+<template>
+  <div class="space-y-6">
+    <div class="bg-white rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4">Hunt List</h2>
+      
+      <!-- Loading indicator -->
+      <div v-if="loading" class="flex justify-center my-8">
+        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+      
+      <!-- Hunt items list -->
+      <div v-else-if="huntList.length > 0" class="space-y-4">
+        <div
+          v-for="huntItem in huntList"
+          :key="huntItem.id"
+          class="p-3 border rounded-lg hover:bg-gray-50"
+        >
+          <div class="flex items-center justify-between">
+            <span class="font-medium">{{ formatItemName(huntItem.item) }}</span>
+            <div class="flex items-center gap-4">
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600">Wager:</label>
+                <input
+                  type="number"
+                  v-model="huntItem.wager"
+                  class="w-24 px-2 py-1 border rounded"
+                  @input="updateHuntItem(huntItem)"
+                />
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <label class="text-sm text-gray-600">Result:</label>
+                <input
+                  type="number"
+                  v-model="huntItem.result"
+                  class="w-24 px-2 py-1 border rounded"
+                  @input="updateHuntItem(huntItem)"
+                />
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  v-model="huntItem.bonus"
+                  class="w-4 h-4"
+                  @change="updateHuntItem(huntItem)"
+                />
+                <label class="text-sm">Bonus</label>
+              </div>
+              
+              <div class="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  v-model="huntItem.super_bonus"
+                  class="w-4 h-4"
+                  @change="updateHuntItem(huntItem)"
+                />
+                <label class="text-sm">Super Bonus</label>
+              </div>
+              
+              <button
+                @click="removeHuntItem(huntItem.id)"
+                class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+              >
+                Remove
+              </button>
+            </div>
+          </div>
+          
+          <!-- Completion status -->
+          <div class="mt-2">
+            <span 
+              :class="[
+                'px-2 py-1 text-xs rounded-full', 
+                huntItem.completed 
+                  ? 'bg-green-100 text-green-800' 
+                  : 'bg-yellow-100 text-yellow-800'
+              ]"
+            >
+              {{ huntItem.completed ? 'Completed' : 'Pending' }}
+            </span>
+            
+            <!-- Show calculated profit/loss if both wager and result are set -->
+            <span 
+              v-if="huntItem.wager !== null && huntItem.result !== null"
+              :class="[
+                'ml-2 px-2 py-1 text-xs rounded-full', 
+                huntItem.result > huntItem.wager 
+                  ? 'bg-green-100 text-green-800' 
+                  : huntItem.result < huntItem.wager 
+                    ? 'bg-red-100 text-red-800' 
+                    : 'bg-gray-100 text-gray-800'
+              ]"
+            >
+              {{ huntItem.result - huntItem.wager > 0 ? '+' : '' }}{{ huntItem.result - huntItem.wager }}
+            </span>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Empty state -->
+      <div v-else class="text-center py-8">
+        <p class="text-gray-500">No items in the hunt list yet.</p>
+        <p class="text-gray-500 mt-2">
+          Add items from the <a :href="`${basePath}suggestions/${props.eventId}`" class="text-blue-500 underline">Suggestions page</a>.
+        </p>
+      </div>
+      
+      <!-- Summary section -->
+      <div v-if="huntList.length > 0" class="mt-8 p-4 border rounded-lg bg-gray-50">
+        <h3 class="text-lg font-semibold mb-2">Hunt Summary</h3>
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="p-3 bg-white rounded shadow">
+            <div class="text-sm text-gray-600">Total Items</div>
+            <div class="text-xl font-bold">{{ huntList.length }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow">
+            <div class="text-sm text-gray-600">Total Wager</div>
+            <div class="text-xl font-bold">{{ calculateTotalWager() }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow">
+            <div class="text-sm text-gray-600">Total Result</div>
+            <div class="text-xl font-bold">{{ calculateTotalResult() }}</div>
+          </div>
+          <div class="p-3 bg-white rounded shadow">
+            <div 
+              :class="[
+                'text-xl font-bold', 
+                calculateProfit() > 0 
+                  ? 'text-green-600' 
+                  : calculateProfit() < 0 
+                    ? 'text-red-600' 
+                    : ''
+              ]"
+            >
+              <div class="text-sm text-gray-600">Profit/Loss</div>
+              {{ calculateProfit() > 0 ? '+' : '' }}{{ calculateProfit() }}
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, onMounted, computed } from 'vue';
+import { getSupabaseClient } from '../../lib/supabase';
+
+// Debug flag
+const DEBUG = true;
+const log = (...args: any[]) => DEBUG && console.log('[HuntList]', ...args);
+
+log('Component script initialization');
+
+const props = defineProps<{
+  eventId: string;
+  userId: string;
+}>();
+
+log('Props received:', props);
+
+// Initialize Supabase client
+const supabase = getSupabaseClient();
+
+// Reactive state
+const huntList = ref<any[]>([]);
+const loading = ref(true);
+
+// Get the base path for navigation
+const basePath = computed(() => import.meta.env.BASE_URL || '/');
+
+// Format item name to be more readable
+const formatItemName = (name: string) => {
+  if (!name) return '';
+  return name
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Fetch hunt list for the selected event
+const fetchHuntList = async () => {
+  try {
+    log('Fetching hunt list for event:', props.eventId);
+    loading.value = true;
+    
+    // First fetch hunt items without joins to avoid GROUP BY errors
+    const { data: huntItemsData, error: huntItemsError } = await supabase
+      .from('hunt_items')
+      .select('*')
+      .eq('event_id', props.eventId)
+      .order('id');
+
+    if (huntItemsError) {
+      console.error('Error fetching hunt items:', huntItemsError);
+      loading.value = false;
+      return;
+    }
+    
+    if (huntItemsData && huntItemsData.length > 0) {
+      // Get all suggestion IDs from hunt items
+      const suggestionIds = huntItemsData.map(item => item.suggestion_id);
+      
+      // Fetch the corresponding suggestions to get the item names
+      const { data: suggestionsData, error: suggestionsError } = await supabase
+        .from('suggestions')
+        .select('id, item')
+        .in('id', suggestionIds);
+        
+      if (suggestionsError) {
+        console.error('Error fetching suggestions for hunt items:', suggestionsError);
+        loading.value = false;
+        return;
+      }
+      
+      // Create a map of suggestion_id to item name
+      const suggestionMap = new Map();
+      suggestionsData?.forEach(suggestion => {
+        suggestionMap.set(suggestion.id, suggestion.item);
+      });
+      
+      // Join the data manually
+      huntList.value = huntItemsData.map(huntItem => ({
+        ...huntItem,
+        item: suggestionMap.get(huntItem.suggestion_id) || 'Unknown item'
+      }));
+    } else {
+      huntList.value = [];
+    }
+    
+    log('Hunt list fetched:', huntList.value.length);
+  } catch (e) {
+    console.error('Exception during hunt list fetching:', e);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Update a hunt item
+const updateHuntItem = async (item: any) => {
+  try {
+    log('Updating hunt item:', item.id);
+    
+    // Check if item should be marked as completed
+    const isCompleted = 
+      item.wager !== null && 
+      item.result !== null && 
+      (item.bonus || item.super_bonus);
+    
+    const { error } = await supabase
+      .from('hunt_items')
+      .update({
+        wager: item.wager,
+        result: item.result,
+        bonus: item.bonus,
+        super_bonus: item.super_bonus,
+        completed: isCompleted
+      })
+      .eq('id', item.id);
+
+    if (error) {
+      console.error('Error updating hunt item:', error);
+      return;
+    }
+    
+    log('Hunt item updated:', item.id);
+  } catch (e) {
+    console.error('Exception during hunt item update:', e);
+  }
+};
+
+// Remove a hunt item
+const removeHuntItem = async (itemId: string) => {
+  try {
+    log('Removing hunt item:', itemId);
+    
+    const { error } = await supabase
+      .from('hunt_items')
+      .delete()
+      .eq('id', itemId);
+
+    if (error) {
+      console.error('Error removing hunt item:', error);
+      return;
+    }
+    
+    // Update the local state
+    huntList.value = huntList.value.filter(item => item.id !== itemId);
+    log('Hunt item removed:', itemId);
+  } catch (e) {
+    console.error('Exception during hunt item removal:', e);
+  }
+};
+
+// Calculate total wager
+const calculateTotalWager = () => {
+  return huntList.value.reduce((total, item) => {
+    return total + (item.wager || 0);
+  }, 0);
+};
+
+// Calculate total result
+const calculateTotalResult = () => {
+  return huntList.value.reduce((total, item) => {
+    return total + (item.result || 0);
+  }, 0);
+};
+
+// Calculate profit/loss
+const calculateProfit = () => {
+  return calculateTotalResult() - calculateTotalWager();
+};
+
+// Lifecycle hooks
+onMounted(async () => {
+  log('Component mounted');
+  await fetchHuntList();
+});
+</script>

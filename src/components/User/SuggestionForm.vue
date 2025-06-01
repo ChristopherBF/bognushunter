@@ -245,6 +245,7 @@ const fetchGames = async () => {
 
 // Reset pagination and fetch games
 const resetAndFetchGames = () => {
+  console.log('Resetting pagination and fetching games');
   currentPage.value = 1;
   fetchGames();
 };
