@@ -1,34 +1,35 @@
 <template>
   <div class="space-y-6">
     <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex justify-between items-center mb-6">
+      <div class="mb-6">
         <h2 class="text-xl font-semibold">Suggestions for Event</h2>
-        <button
-          @click="addSelectedToHunt"
-          class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          :disabled="!selectedSuggestions.length"
-        >
-          Add to Hunt List
-        </button>
+        <p class="text-sm text-gray-600 mt-1">Click on an item to add it to the hunt list</p>
       </div>
-      <div class="space-y-4">
+      
+      <!-- Grid layout for suggestions -->
+      <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
         <div
           v-for="suggestion in suggestions"
           :key="suggestion.id"
-          class="p-3 border rounded-lg hover:bg-gray-50 flex items-center justify-between"
+          class="border rounded-lg hover:bg-gray-50 cursor-pointer transition-all hover:shadow-md"
+          @click="addToHunt(suggestion)"
         >
-          <div class="flex-1">
-            <div class="flex items-center justify-between">
-              <span>{{ formatItemName(suggestion.item) }}</span>
-              <span class="text-sm text-gray-600">{{ suggestion.count }} suggestions</span>
+          <div class="p-4 flex flex-col items-center text-center">
+            <!-- Placeholder image/icon -->
+            <div class="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mb-3">
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+              </svg>
+            </div>
+            
+            <!-- Item name -->
+            <div class="font-medium">{{ formatItemName(suggestion.item) }}</div>
+            
+            <!-- Suggestion count badge -->
+            <div class="mt-2 px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+              {{ suggestion.count }} suggestions
             </div>
           </div>
-          <input
-            type="checkbox"
-            v-model="selectedSuggestions"
-            :value="suggestion.id"
-            class="w-4 h-4"
-          />
         </div>
       </div>
     </div>
@@ -83,7 +84,6 @@ const supabase = getSupabaseClient();
 // Reactive state
 const suggestions = ref<any[]>([]);
 const huntList = ref<any[]>([]);
-const selectedSuggestions = ref<string[]>([]);
 
 // Fetch suggestions for the selected event
 const fetchSuggestions = async () => {
@@ -266,67 +266,7 @@ const addToHunt = async (suggestion: any) => {
   }
 };
 
-// Add selected suggestions to the hunt list
-const addSelectedToHunt = async () => {
-  try {
-    log('Adding selected suggestions to hunt list:', selectedSuggestions.value);
-    
-    if (selectedSuggestions.value.length === 0) {
-      return;
-    }
-    
-    // Get the selected suggestions
-    const selectedItems = suggestions.value.filter(suggestion => 
-      selectedSuggestions.value.includes(suggestion.id)
-    );
-    
-    // Filter out items that already exist in the hunt list
-    const newItems = selectedItems.filter(suggestion => 
-      !huntList.value.some(item => item.item === suggestion.item)
-    );
-    
-    // If all selected items already exist, show a message
-    if (newItems.length === 0) {
-      alert('All selected items are already in the hunt list.');
-      return;
-    }
-    
-    // If some items already exist, show a message
-    if (newItems.length < selectedItems.length) {
-      const skippedCount = selectedItems.length - newItems.length;
-      alert(`${skippedCount} item(s) were already in the hunt list and will be skipped.`);
-    }
-    
-    // Prepare the items to insert
-    const itemsToInsert = newItems.map(suggestion => ({
-      event_id: props.eventId,
-      suggestion_id: suggestion.id,
-      wager: 1,
-      result: 0,
-      bonus: false,
-      super_bonus: false,
-      completed: false
-    }));
-    
-    if (itemsToInsert.length > 0) {
-      const { error } = await supabase.from('hunt_items').insert(itemsToInsert);
-      
-      if (error) {
-        console.error('Error adding suggestions to hunt list:', error);
-        return;
-      }
-    }
-    
-    // Clear the selection
-    selectedSuggestions.value = [];
-    
-    // Refresh the hunt list
-    await fetchHuntList();
-    log('Selected suggestions added to hunt list');
-  } catch (e) {
-    console.error('Exception during adding selected suggestions to hunt list:', e);
-  }
-};
+
 
 // Remove a hunt item
 const removeFromHunt = async (id: string) => {

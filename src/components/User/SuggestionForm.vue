@@ -40,7 +40,7 @@
           <!-- Game thumbnail with background -->
           <div class="relative w-full h-40 mb-3 overflow-hidden rounded-md">
             <img 
-              :src="game.url_background || game.url_thumb" 
+              :src="game.custom_thumb.replace('cdn://', 'https://cdnv1.500.casino/') || game.url_thumb" 
               :alt="game.name" 
               class="w-full h-full object-cover"
               @error="handleImageError($event, game)"
@@ -163,8 +163,8 @@ const formatFeature = (feature: string) => {
 const handleImageError = (event: Event, game: any) => {
   const target = event.target as HTMLImageElement;
   // Try fallback image if available
-  if (target.src !== game.url_thumb && game.url_thumb) {
-    target.src = game.url_thumb;
+  if (target.src !== game.custom_thumb && game.custom_thumb) {
+    target.src = game.custom_thumb.replace('cdn://', 'https://cdnv1.500.casino/');
   } else {
     // Use a placeholder if both images fail
     target.src = `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent(formatGameName(game.name))}`;

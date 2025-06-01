@@ -89,21 +89,6 @@
             >
               {{ huntItem.completed ? 'Completed' : 'Pending' }}
             </span>
-            
-            <!-- Show calculated profit/loss if both wager and result are set -->
-            <span 
-              v-if="huntItem.wager !== null && huntItem.result !== null"
-              :class="[
-                'ml-2 px-2 py-1 text-xs rounded-full', 
-                huntItem.result > huntItem.wager 
-                  ? 'bg-green-100 text-green-800' 
-                  : huntItem.result < huntItem.wager 
-                    ? 'bg-red-100 text-red-800' 
-                    : 'bg-gray-100 text-gray-800'
-              ]"
-            >
-              {{ huntItem.result - huntItem.wager > 0 ? '+' : '' }}{{ huntItem.result - huntItem.wager }}
-            </span>
           </div>
         </div>
       </div>
@@ -123,10 +108,6 @@
           <div class="p-3 bg-white rounded shadow">
             <div class="text-sm text-gray-600">Total Items</div>
             <div class="text-xl font-bold">{{ huntList.length }}</div>
-          </div>
-          <div class="p-3 bg-white rounded shadow">
-            <div class="text-sm text-gray-600">Total Wager</div>
-            <div class="text-xl font-bold">{{ calculateTotalWager() }}</div>
           </div>
           <div class="p-3 bg-white rounded shadow">
             <div class="text-sm text-gray-600">Total Result</div>
