@@ -1,6 +1,7 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import SuggestionForm from '../components/User/SuggestionForm.vue';
+import TestComponent from '../components/User/TestComponent.vue';
 import { getCurrentUser } from '../lib/auth';
 
 // Get the user using direct Supabase authentication
@@ -18,5 +19,9 @@ const eventId = Astro.props.eventId || defaultEventId;
 ---
 
 <Layout title="Bognus Hunter Dashboard">
-  <SuggestionForm eventId={eventId} userId={user.id} />
+  <!-- <div class="mb-6">
+    <TestComponent client:load />
+  </div> -->
+  
+  <SuggestionForm eventId={eventId} userId={user.id} client:load />
 </Layout>
