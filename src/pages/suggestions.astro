@@ -1,41 +1,21 @@
 ---
 import Layout from '../layouts/Layout.astro';
 import { getSupabaseClient } from '../lib/supabase';
-import SuggestionsList from '../components/Admin/SuggestionsList.vue';
-
-// Get the event ID from the URL parameters
-const { eventId } = Astro.params;
 
 // Check if user is authenticated
 const supabase = getSupabaseClient(Astro.cookies);
 const { data: { user } } = await supabase.auth.getUser();
 
 console.log('[suggestions.astro] User from Supabase:', user ? 'authenticated' : 'not authenticated');
-console.log('[suggestions.astro] Event ID:', eventId);
 
 // Redirect to login if not authenticated
 if (!user) {
   return Astro.redirect('/login');
 }
 
-// Get user ID for passing to component
-const userId = user.id;
----
+// Get the base path for navigation
+const basePath = import.meta.env.BASE_URL || '/';
 
-<Layout title="Suggestions">
-  <main class="container mx-auto px-4 py-8">
-    <h1 class="text-2xl font-bold mb-6">Suggestions</h1>
-    
-    {eventId ? (
-      <SuggestionsList 
-        client:load 
-        eventId={eventId} 
-        userId={userId}
-      />
-    ) : (
-      <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-4 mb-6">
-        <p>No event selected. Please select an event from the <a href="/admin" class="underline">Admin Dashboard</a>.</p>
-      </div>
-    )}
-  </main>
-</Layout>
+// Redirect to admin page since no event ID is specified
+return Astro.redirect(`${basePath}admin`);
+---

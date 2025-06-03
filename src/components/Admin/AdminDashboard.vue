@@ -66,6 +66,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
+import { subscribeSuggestions, unsubscribeAll, type SuggestionPayload } from '../../lib/realtime';
 
 // Debug flag
 const DEBUG = true;
@@ -127,6 +128,41 @@ const handleCreateEvent = async (e?: Event) => {
 // Keep the original createEvent function for compatibility
 const createEvent = handleCreateEvent;
 
+// Set up real-time subscriptions for all events
+const setupRealTimeSubscriptions = () => {
+  log('Setting up real-time subscriptions for all events');
+  
+  // Store cleanup functions for each event
+  const cleanupFunctions: Record<string, () => void> = {};
+  
+  // Subscribe to suggestions for each event
+  events.value.forEach(event => {
+    log(`Setting up subscription for event ${event.id}`);
+    cleanupFunctions[event.id] = subscribeSuggestions(event.id, (payload: SuggestionPayload) => {
+      log(`Received suggestion change for event ${event.id}:`, payload);
+      
+      // Update the count for this event
+      const eventIndex = events.value.findIndex(e => e.id === event.id);
+      if (eventIndex !== -1) {
+        // Handle different event types
+        if (payload.new.event_id === event.id) {
+          events.value[eventIndex].suggestions_count += 1;
+          log(`Incremented count for event ${event.id} to ${events.value[eventIndex].suggestions_count}`);
+        } else if (payload.new.event_id === event.id) {
+          events.value[eventIndex].suggestions_count = Math.max(0, events.value[eventIndex].suggestions_count - 1);
+          log(`Decremented count for event ${event.id} to ${events.value[eventIndex].suggestions_count}`);
+        }
+      }
+    });
+  });
+  
+  // Return cleanup function that will unsubscribe all
+  return () => {
+    log('Cleaning up all subscriptions');
+    Object.values(cleanupFunctions).forEach(cleanup => cleanup());
+  };
+};
+
 onMounted(async () => {
   log('Component mounted');
   
@@ -134,12 +170,10 @@ onMounted(async () => {
     // Wait for the next tick to ensure the DOM is fully rendered
     await nextTick();
     
-    // Set up direct DOM event listener using the ref
+    // Set up the click event listener for the create event button
     if (createEventButtonRef.value) {
-      log('Adding click listener to create event button');
+      log('Adding event listener to create event button');
       createEventButtonRef.value.addEventListener('click', handleCreateEvent);
-      
-      // Add a test click handler to verify DOM events are working
       createEventButtonRef.value.addEventListener('mousedown', () => {
         log('Button mousedown event detected');
       });
@@ -153,6 +187,21 @@ onMounted(async () => {
       log('Calling fetchEvents');
       await fetchEvents();
       log('fetchEvents completed successfully');
+      
+      // Set up real-time subscriptions after events are loaded
+      log('Setting up real-time subscriptions');
+      const cleanup = setupRealTimeSubscriptions();
+      
+      // Clean up subscriptions when component unmounts
+      onUnmounted(() => {
+        log('Component unmounting, cleaning up subscriptions');
+        cleanup();
+        
+        if (createEventButtonRef.value) {
+          log('Removing event listeners');
+          createEventButtonRef.value.removeEventListener('click', handleCreateEvent);
+        }
+      });
     } catch (error) {
       console.error('Error in fetchEvents:', error);
     }
@@ -165,12 +214,13 @@ onMounted(async () => {
 
 const formatDate = (dateString: string) => {
   const date = new Date(dateString);
-  return date.toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'short', 
+  return date.toLocaleDateString('en-GB', {
+    year: 'numeric',
+    month: 'short',
     day: 'numeric',
     hour: '2-digit',
-    minute: '2-digit'
+    minute: '2-digit',
+    hour12: false
   });
 };
 
@@ -218,7 +268,6 @@ const shareSuggestionLink = (eventId: string) => {
 };
 
 const fetchEvents = async () => {
-  try {
     log('Fetching events');
     
     // First, fetch all events
@@ -249,9 +298,6 @@ const fetchEvents = async () => {
     
     events.value = eventsWithCounts;
     log('Events fetched:', events.value);
-  } catch (e) {
-    console.error('Exception during event fetching:', e);
-  }
 };
 
 const viewSuggestions = (eventId: string) => {
@@ -259,13 +305,4 @@ const viewSuggestions = (eventId: string) => {
   const basePath = import.meta.env.BASE_URL || '/';
   window.location.href = `${basePath}suggestions/${eventId}`;
 };
-
-// Clean up the event listener when the component is unmounted
-onUnmounted(() => {
-  log('Component unmounting');
-  if (createEventButtonRef.value) {
-    log('Removing event listeners');
-    createEventButtonRef.value.removeEventListener('click', handleCreateEvent);
-  }
-});
 </script>

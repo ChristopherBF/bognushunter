@@ -40,7 +40,7 @@
           <!-- Game thumbnail with background -->
           <div class="relative w-full h-40 mb-3 overflow-hidden rounded-md">
             <img 
-              :src="game.custom_thumb.replace('cdn://', 'https://cdnv1.500.casino/') || game.url_thumb" 
+              :src="game.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/') || game.url_thumb" 
               :alt="game.name" 
               class="w-full h-full object-cover"
               @error="handleImageError($event, game)"
@@ -164,7 +164,7 @@ const handleImageError = (event: Event, game: any) => {
   const target = event.target as HTMLImageElement;
   // Try fallback image if available
   if (target.src !== game.custom_thumb && game.custom_thumb) {
-    target.src = game.custom_thumb.replace('cdn://', 'https://cdnv1.500.casino/');
+    target.src = game.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/');
   } else {
     // Use a placeholder if both images fail
     target.src = `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent(formatGameName(game.name))}`;
@@ -269,19 +269,32 @@ const prevPage = () => {
 const suggestItem = async (item: string) => {
   if (suggestedItems.value.includes(item)) return;
   
+  // Find the game data for the selected item
+  const selectedGame = games.value.find(game => game.name === item);
+  
   const supabase = getSupabaseClient();
   
   try {
+    console.log('Suggesting item with game data:', selectedGame);
+    
+    // Create the suggestion with thumbnail and background URLs
     const { error } = await supabase.from('suggestions').insert({
       event_id: props.eventId,
       user_id: props.userId,
       item: item,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      // Add thumbnail and background URLs
+      custom_thumb: selectedGame?.custom_thumb || selectedGame?.url_thumb || null,
+      url_background: selectedGame?.url_background || null
     });
     
     if (error) throw error;
     
     suggestedItems.value.push(item);
+    console.log('Item suggested successfully with images:', {
+      custom_thumb: selectedGame?.custom_thumb || selectedGame?.url_thumb,
+      url_background: selectedGame?.url_background
+    });
   } catch (error) {
     console.error('Error suggesting item:', error);
     alert('Failed to suggest item. Please try again.');
@@ -307,12 +320,23 @@ const fetchSuggestedItems = async () => {
   }
 };
 
+// Cleanup function for subscriptions
+const cleanupSubscriptions = (channel) => {
+  if (channel) {
+    console.log('Cleaning up real-time subscriptions');
+    channel.unsubscribe();
+  }
+};
+
 // Lifecycle hooks
+let suggestionsChannel;
+
 onMounted(() => {
   console.log('Component mounted, calling fetchGames...');
   fetchGames();
   console.log('Called fetchGames, now calling fetchSuggestedItems...');
   fetchSuggestedItems();
+  
   console.log('Component initialization complete');
   
   // Force a second fetch after a short delay to ensure it runs
@@ -320,5 +344,10 @@ onMounted(() => {
     console.log('Forcing second fetchGames call after timeout');
     fetchGames();
   }, 2000);
+});
+
+onUnmounted(() => {
+  console.log('Component unmounting, cleaning up subscriptions');
+  cleanupSubscriptions(suggestionsChannel);
 });
 </script>

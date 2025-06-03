@@ -16,7 +16,32 @@
           class="p-3 border rounded-lg hover:bg-gray-50"
         >
           <div class="flex items-center justify-between">
-            <span class="font-medium">{{ formatItemName(huntItem.item) }}</span>
+            <div class="flex items-center gap-3">
+              <!-- Game thumbnail with background -->
+              <div class="w-12 h-12 rounded overflow-hidden flex-shrink-0 relative">
+                <!-- Background image if available -->
+                <div v-if="huntItem.url_background" class="absolute inset-0 z-0">
+                  <img 
+                    :src="huntItem.url_background?.replace('cdn://', 'https://cdnv1.500.casino/')" 
+                    :alt="`${huntItem.item} background`" 
+                    class="w-full h-full object-cover opacity-30"
+                  />
+                </div>
+                
+                <!-- Main thumbnail -->
+                <img 
+                  v-if="huntItem.custom_thumb" 
+                  :src="huntItem.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/') || getPlaceholderImage(huntItem.item)" 
+                  :alt="huntItem.item" 
+                  class="w-full h-full object-cover relative z-10"
+                  @error="handleImageError($event, huntItem)"
+                />
+                <div v-else class="w-full h-full bg-gray-200 flex items-center justify-center relative z-10">
+                  <span class="text-xs text-gray-500">{{ formatItemName(huntItem.item).substring(0, 2).toUpperCase() }}</span>
+                </div>
+              </div>
+              <span class="font-medium">{{ formatItemName(huntItem.item) }}</span>
+            </div>
             <div class="flex items-center gap-4">
               <div class="flex items-center gap-2">
                 <label class="text-sm text-gray-600">Wager:</label>
@@ -141,7 +166,7 @@
               placeholder="Enter starting balance"
             />
           </div>
-          <div class="flex-1 flex items-center gap-2">
+          <!-- <div class="flex-1 flex items-center gap-2">
             <label class="text-sm text-gray-600">Current Balance:</label>
             <input
               type="number"
@@ -150,7 +175,7 @@
               @input="updateCurrentBalance"
               placeholder="Enter current balance"
             />
-          </div>
+          </div> -->
         </div>
       </div>
     </div>
@@ -226,10 +251,10 @@ const fetchHuntList = async () => {
       // Get all suggestion IDs from hunt items
       const suggestionIds = huntItemsData.map(item => item.suggestion_id);
       
-      // Fetch the corresponding suggestions to get the item names
+      // Then fetch the related suggestions separately
       const { data: suggestionsData, error: suggestionsError } = await supabase
         .from('suggestions')
-        .select('id, item')
+        .select('id, item, custom_thumb, url_background')
         .in('id', suggestionIds);
         
       if (suggestionsError) {
@@ -238,16 +263,28 @@ const fetchHuntList = async () => {
         return;
       }
       
-      // Create a map of suggestion_id to item name
+      // Create maps for suggestion data
       const suggestionMap = new Map();
+      const thumbnailMap = new Map();
+      const backgroundMap = new Map();
+      
       suggestionsData?.forEach(suggestion => {
         suggestionMap.set(suggestion.id, suggestion.item);
+        if (suggestion.custom_thumb) {
+          thumbnailMap.set(suggestion.id, suggestion.custom_thumb);
+        }
+        if (suggestion.url_background) {
+          backgroundMap.set(suggestion.id, suggestion.url_background);
+        }
       });
       
       // Join the data manually
       huntList.value = huntItemsData.map(huntItem => ({
         ...huntItem,
-        item: suggestionMap.get(huntItem.suggestion_id) || 'Unknown item'
+        item: suggestionMap.get(huntItem.suggestion_id) || 'Unknown item',
+        // Prioritize thumbnails and backgrounds from hunt_items table, fall back to suggestion data
+        custom_thumb: huntItem.custom_thumb || thumbnailMap.get(huntItem.suggestion_id) || null,
+        url_background: huntItem.url_background || backgroundMap.get(huntItem.suggestion_id) || null
       }));
     } else {
       huntList.value = [];
@@ -375,6 +412,18 @@ const calculateTotalResult = () => {
 // Calculate profit/loss
 const calculateProfit = () => {
   return calculateTotalResult() - calculateTotalWager();
+};
+
+// Handle image errors
+const handleImageError = (event: Event, huntItem: any) => {
+  const target = event.target as HTMLImageElement;
+  // Use a placeholder if image fails
+  target.src = getPlaceholderImage(huntItem.item);
+};
+
+// Get placeholder image for a game
+const getPlaceholderImage = (gameName: string) => {
+  return `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent(formatItemName(gameName))}`;
 };
 
 // Lifecycle hooks

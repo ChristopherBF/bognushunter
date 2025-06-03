@@ -35,12 +35,13 @@ if (eventId) {
     } else if (eventData) {
       eventExists = true;
       const date = new Date(eventData.date);
-      eventDate = date.toLocaleDateString('en-US', { 
-        year: 'numeric', 
-        month: 'short', 
+      eventDate = date.toLocaleDateString('en-GB', {
+        year: 'numeric',
+        month: 'short',
         day: 'numeric',
         hour: '2-digit',
-        minute: '2-digit'
+        minute: '2-digit',
+        hour12: false
       });
     }
   } catch (e) {
