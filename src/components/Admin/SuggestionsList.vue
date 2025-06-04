@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
-    <div class="bg-white rounded-lg shadow p-6">
+  <div class="space-y-6 bg-brown text-gold">
+    <div class="rounded-lg shadow p-6">
       <div class="mb-6">
-        <h2 class="text-xl font-semibold">Suggestions for Event</h2>
-        <p class="text-sm text-gray-600 mt-1">Click on an item to add it to the hunt list</p>
+        <h2 class="text-xl font-semibold text-orange">Bognus suggestions for hunt</h2>
+        <p class="text-sm mt-1">Click on an item to add it to the hunt list</p>
       </div>
       
       <!-- Grid layout for suggestions -->
@@ -11,7 +11,7 @@
         <div
           v-for="suggestion in suggestions"
           :key="suggestion.id"
-          class="border rounded-lg hover:bg-gray-50 cursor-pointer transition-all hover:shadow-md"
+          class="border rounded-lg hover:bg-orange-900/40 cursor-pointer transition-all hover:shadow-md"
           :class="{ 'bg-green-100': recentlyAddedSuggestions.includes(suggestion.item) }"
           @click="addToHunt(suggestion)"
         >
@@ -25,14 +25,11 @@
                 @error="handleImageError($event, suggestion)"
               />
               <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-              <div class="absolute bottom-0 left-0 right-0 p-2 text-white">
-                <span class="font-medium text-sm">{{ formatItemName(suggestion.item) }}</span>
-              </div>
             </div>
             
             <!-- Item name and count -->
             <div class="flex justify-between items-start w-full">
-              <span class="font-medium text-gray-800">{{ formatItemName(suggestion.item) }}</span>
+              <span class="font-medium text-gold">{{ formatItemName(suggestion.item) }}</span>
               <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
                 x{{ suggestion.count }}
               </span>
@@ -42,19 +39,19 @@
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4">Hunt List</h2>
+    <div class="rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4 text-orange">Hunt List</h2>
       <div class="space-y-4">
         <div
           v-for="huntItem in huntList"
           :key="huntItem.id"
-          class="p-3 border rounded-lg hover:bg-gray-50"
+          class="p-3 border rounded-lg hover:bg-orange-900/40"
         >
           <div class="flex items-center justify-between">
             <span>{{ formatItemName(huntItem.item) }}</span>
             <button
-              @click="removeFromHunt(huntItem.id)"
-              class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+              @click.stop.prevent="removeFromHunt(huntItem.id)"
+              class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800"
             >
               Remove
             </button>
@@ -66,8 +63,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted, computed } from 'vue';
-import { getSupabaseClient } from '../../lib/supabase';
+import { ref, onMounted, onUnmounted } from 'vue';
+import { getSupabaseClient, supabase as supabaseClient } from '../../lib/supabase';
 import { formatItemName } from '../../lib/utils';
 import { subscribeSuggestions, subscribeHuntItems, type SuggestionPayload, type HuntItemPayload } from '../../lib/realtime';
 
@@ -106,7 +103,7 @@ const saveCustomThumb = async (suggestionId: string, thumbUrl: string, backgroun
       updateData.url_background = backgroundUrl;
     }
     
-    const { error } = await supabase
+    const { error } = await supabaseClient
       .from('suggestions')
       .update(updateData)
       .eq('id', suggestionId);
@@ -125,7 +122,7 @@ const fetchSuggestions = async () => {
     log('Fetching suggestions for event:', props.eventId);
     
     // First fetch all suggestions for this event
-    const { data: rawSuggestions, error: suggestionError } = await supabase
+    const { data: rawSuggestions, error: suggestionError } = await supabaseClient
       .from('suggestions')
       .select('id, item, user_id, created_at, event_id, custom_thumb, url_background')
       .eq('event_id', props.eventId);
@@ -257,7 +254,7 @@ const fetchHuntList = async () => {
     log('Fetching hunt list for event:', props.eventId);
     
     // First fetch hunt items without joins
-    const { data: huntItemsData, error: huntItemsError } = await supabase
+    const { data: huntItemsData, error: huntItemsError } = await supabaseClient
       .from('hunt_items')
       .select('*')
       .eq('event_id', props.eventId);
@@ -271,7 +268,7 @@ const fetchHuntList = async () => {
     if (huntItemsData && huntItemsData.length > 0) {
       const suggestionIds = huntItemsData.map(item => item.suggestion_id);
       
-      const { data: suggestionsData, error: suggestionsError } = await supabase
+      const { data: suggestionsData, error: suggestionsError } = await supabaseClient
         .from('suggestions')
         .select('id, item')
         .in('id', suggestionIds);
@@ -341,7 +338,7 @@ const addToHunt = async (suggestion: any) => {
     
     // Check if this item already exists in the hunt list
     // We need to fetch the hunt list items with their associated suggestions to check
-    const { data: existingItems, error: fetchError } = await supabase
+    const { data: existingItems, error: fetchError } = await supabaseClient
       .from('hunt_items')
       .select('suggestion_id')
       .eq('event_id', props.eventId);
@@ -361,7 +358,7 @@ const addToHunt = async (suggestion: any) => {
     }
     
     // Create the hunt item with thumbnail and background URLs
-    const { error } = await supabase.from('hunt_items').insert({
+    const { error } = await supabaseClient.from('hunt_items').insert({
       event_id: props.eventId,
       suggestion_id: suggestion.id,
       wager: 1,
@@ -387,23 +384,79 @@ const addToHunt = async (suggestion: any) => {
 
 // Remove a hunt item
 const removeFromHunt = async (id: string) => {
-  try {
-    log('Removing hunt item:', id);
-    
-    const { error } = await supabase
-      .from('hunt_items')
-      .delete()
-      .eq('id', id);
+  if (!id) {
+    console.error('Invalid hunt item ID for removal');
+    return;
+  }
 
-    if (error) {
-      console.error('Error removing hunt item:', error);
+  // Store original list outside try/catch for error recovery
+  const originalList = [...huntList.value];
+
+  try {
+    log('Removing hunt item with ID:', id);
+    
+    // Log authentication state for debugging
+    const { data: userData } = await supabaseClient.auth.getUser();
+    console.log('Current user:', userData);
+    
+    // First update local state for immediate UI feedback (optimistic update)
+    huntList.value = huntList.value.filter(item => item.id !== id);
+    
+    // Make sure we have a valid event ID
+    if (!props.eventId) {
+      console.error('Missing event ID for hunt item removal');
+      huntList.value = originalList;
       return;
     }
     
+    // Log the deletion attempt for debugging
+    console.log('Attempting to delete hunt item with ID:', id);
+    
+    // First, try to get the item to confirm it exists
+    const { data: itemToDelete, error: fetchError } = await supabaseClient
+      .from('hunt_items')
+      .select('*')
+      .eq('id', id)
+      .single();
+      
+    if (fetchError) {
+      console.error('Error fetching hunt item before deletion:', fetchError);
+      huntList.value = originalList;
+      return;
+    }
+    
+    console.log('Item to delete:', itemToDelete);
+    
+    // Check RLS policies by trying to get the session
+    const { data: sessionData } = await supabaseClient.auth.getSession();
+    console.log('Current session:', sessionData);
+    
+    // Perform the deletion with explicit table name and condition
+    const { error, data } = await supabaseClient
+      .from('hunt_items')
+      .delete()
+      .eq('id', id)
+      .select();
+
+    console.log('Delete response data:', data);
+    
+    if (error) {
+      console.error('Error removing hunt item:', error);
+      // Restore original list if there was an error
+      huntList.value = originalList;
+      return;
+    }
+    
+    log('Hunt item removed successfully from database');
+    
+    // Force a refetch to ensure UI is in sync with the database
     await fetchHuntList();
-    log('Hunt item removed:', id);
   } catch (e) {
     console.error('Exception during removing hunt item:', e);
+    // Restore original list on exception
+    huntList.value = originalList;
+    // Refetch the list to ensure UI is in sync with the database
+    await fetchHuntList();
   }
 };
 

@@ -55,13 +55,19 @@ if (!eventExists) {
 }
 ---
 
-<Layout title={`Suggest Items for Event - ${eventDate}`}>
-  <main class="container mx-auto px-4 py-8">
-    <div class="mb-6">
-      <h1 class="text-2xl font-bold">Suggest Items for Event - {eventDate}</h1>
-      <p class="text-gray-600 mt-2">
-        Select games from the list below to suggest them for this event.
-      </p>
+<Layout title={`Suggest items for the bognus hunt - ${eventDate}`}>
+  <div class="bg-brown text-gold min-h-screen">
+    <main class="container mx-auto px-4 py-8">
+      <div class="mb-6">
+        <h1 class="text-2xl font-bold">Suggest items for the bognus hunt - {eventDate}</h1>
+        <p class="text-gray-600 mt-2">
+          Select games from the list below to suggest them for this event.
+        </p>
+      </div>
+      
+      <SuggestionForm eventId={eventId} userId={user.id} client:load />
+    </main>
+  </div>
     </div>
     
     <SuggestionForm eventId={eventId} userId={user.id} client:load />

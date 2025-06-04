@@ -1,49 +1,49 @@
 <template>
   <div class="space-y-6">
-    <div class="bg-white rounded-lg shadow p-6">
-      <div class="flex justify-between items-center mb-6">
-        <h2 class="text-xl font-semibold">Suggestion Events</h2>
+    <div class="bg-brown border-2 border-orange rounded-xl shadow-lg p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h2 class="text-2xl font-display mb-1 flex-grow text-gold">Bognus Hunts</h2>
         <!-- Using a button with ref for direct access -->
         <button
           ref="createEventButtonRef"
           type="button"
-          class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          class="px-6 py-3 font-display bg-orange-700 text-gold rounded shadow-md hover:bg-orange-800 transform hover:scale-105 transition-transform"
         >
-          Create Event
+          Create Hunt
         </button>
       </div>
       <div class="space-y-4">
         <div
           v-for="event in events"
           :key="event.id"
-          class="p-3 border rounded-lg hover:bg-gray-50 cursor-pointer"
+          class="p-4 border border-streamer-text-secondary/40 rounded-lg hover:bg-orange-900/40 cursor-pointer shadow"
         >
           <div class="flex justify-between items-center">
             <span>{{ formatDate(event.date) }}</span>
             <div class="flex items-center gap-2">
-              <span class="text-sm text-gray-600">{{ event.suggestions_count }} suggestions</span>
+              <span class="text-sm text-streamer-text-secondary">{{ event.suggestions_count }} suggestions</span>
               <div class="flex space-x-2">
                 <button 
                   @click="viewSuggestions(event.id)"
-                  class="px-3 py-1 bg-blue-500 text-white text-sm rounded hover:bg-blue-600"
+                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
                 >
                   View Suggestions
                 </button>
                 <button 
                   @click="viewSummary(event.id)"
-                  class="px-3 py-1 bg-green-500 text-white text-sm rounded hover:bg-green-600"
+                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
                 >
                   View Summary
                 </button>
                 <button 
                   @click="viewHuntList(event.id)"
-                  class="px-3 py-1 bg-indigo-500 text-white text-sm rounded hover:bg-indigo-600"
+                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
                 >
                   Hunt List
                 </button>
                 <button 
                   @click="shareSuggestionLink(event.id)"
-                  class="px-3 py-1 bg-purple-500 text-white text-sm rounded hover:bg-purple-600"
+                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
                 >
                   Share Link
                 </button>
@@ -51,7 +51,7 @@
             </div>
           </div>
           <!-- Notification for copied link -->
-          <div v-if="copiedEventId === event.id" class="mt-2 text-sm text-green-600 flex items-center">
+          <div v-if="copiedEventId === event.id" class="mt-2 text-sm text-streamer-green-accent flex items-center">
             <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
             </svg>
@@ -145,10 +145,10 @@ const setupRealTimeSubscriptions = () => {
       const eventIndex = events.value.findIndex(e => e.id === event.id);
       if (eventIndex !== -1) {
         // Handle different event types
-        if (payload.new.event_id === event.id) {
+        if (payload.eventType === 'INSERT') {
           events.value[eventIndex].suggestions_count += 1;
           log(`Incremented count for event ${event.id} to ${events.value[eventIndex].suggestions_count}`);
-        } else if (payload.new.event_id === event.id) {
+        } else if (payload.eventType === 'DELETE') {
           events.value[eventIndex].suggestions_count = Math.max(0, events.value[eventIndex].suggestions_count - 1);
           log(`Decremented count for event ${event.id} to ${events.value[eventIndex].suggestions_count}`);
         }

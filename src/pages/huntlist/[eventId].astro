@@ -65,12 +65,13 @@ const formatItemName = (name) => {
 ---
 
 <Layout title={`Hunt List - ${eventDate}`}>
-  <main class="container mx-auto px-4 py-8">
-    <div class="flex justify-between items-center mb-6">
-      <h1 class="text-2xl font-bold">Hunt List - {eventDate}</h1>
-      <a href={`${basePath}admin`} class="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700">
-        Back to Admin
-      </a>
+  <body class="bg-brown text-gold min-h-screen">
+    <main class="container mx-auto px-4 py-8">
+      <div class="flex justify-between items-center mb-6">
+        <h1 class="text-2xl font-bold">Hunt List - {eventDate}</h1>
+        <a href={`${basePath}admin`} class="px-4 py-2 bg-orange-500 text-gold rounded-lg hover:bg-orange-700">
+          Back to Admin
+        </a>
     </div>
     
     {eventId ? (

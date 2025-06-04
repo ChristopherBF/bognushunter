@@ -2,6 +2,7 @@ import { getSupabaseClient } from './supabase';
 
 // Type definitions for subscription payloads
 export interface SuggestionPayload {
+  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
   new: {
     id?: string;
     event_id?: string;
@@ -11,6 +12,11 @@ export interface SuggestionPayload {
     custom_thumb?: string;
     url_thumb?: string;
     url_background?: string;
+  };
+  old?: {
+    id?: string;
+    event_id?: string;
+    item?: string;
   };
 }
 
@@ -61,12 +67,20 @@ export function subscribeSuggestions(eventId: string, callback: SubscriptionCall
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'suggestions' },
-      (payload: SuggestionPayload) => {
+      (rawPayload: any) => {
         console.log('[RealTime] [DEBUG] postgres_changes callback FIRED');
-        console.log('[RealTime] [DEBUG] Raw payload:', payload);
+        console.log('[RealTime] [DEBUG] Raw payload:', rawPayload);
+        
+        // Create a properly typed payload with eventType
+        const payload: SuggestionPayload = {
+          ...rawPayload,
+          eventType: rawPayload.eventType
+        };
+        
         if (payload.new) {
           console.log('[RealTime] [DEBUG] payload.new.event_id:', payload.new.event_id, 'expected:', eventId);
         }
+        
         // Only trigger callbacks if the event_id matches
         if (payload.new && payload.new.event_id === eventId) {
           console.log('[RealTime] [DEBUG] Matched event ID, triggering callbacks');

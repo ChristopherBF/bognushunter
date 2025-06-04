@@ -1,19 +1,16 @@
 <template>
   <div class="space-y-6">
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4">Hunt List</h2>
+    <div class="bg-brown rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4 text-gold">Hunt List</h2>
       
-      <!-- Loading indicator -->
       <div v-if="loading" class="flex justify-center my-8">
         <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
-      
-      <!-- Hunt items list -->
       <div v-else-if="huntList.length > 0" class="space-y-4">
         <div
           v-for="huntItem in huntList"
           :key="huntItem.id"
-          class="p-3 border rounded-lg hover:bg-gray-50"
+          class="p-3 border rounded-lg hover:bg-orange-900/40"
         >
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-3">
@@ -36,29 +33,30 @@
                   class="w-full h-full object-cover relative z-10"
                   @error="handleImageError($event, huntItem)"
                 />
-                <div v-else class="w-full h-full bg-gray-200 flex items-center justify-center relative z-10">
-                  <span class="text-xs text-gray-500">{{ formatItemName(huntItem.item).substring(0, 2).toUpperCase() }}</span>
+                <div v-else class="w-full h-full bg-orange flex items-center justify-center relative z-10">
+                  <span class="text-xs text-gold">{{ formatItemName(huntItem.item).substring(0, 2).toUpperCase() }}</span>
+                </div>
                 </div>
               </div>
               <span class="font-medium">{{ formatItemName(huntItem.item) }}</span>
             </div>
             <div class="flex items-center gap-4">
               <div class="flex items-center gap-2">
-                <label class="text-sm text-gray-600">Wager:</label>
+                <label class="text-sm text-gold">Wager:</label>
                 <input
                   type="number"
                   v-model="huntItem.wager"
-                  class="w-24 px-2 py-1 border rounded"
+                  class="w-24 px-2 py-1 border rounded bg-brown-dark text-gold"
                   @input="updateHuntItem(huntItem)"
                 />
               </div>
               
               <div class="flex items-center gap-2">
-                <label class="text-sm text-gray-600">Result:</label>
+                <label class="text-sm text-gold">Result:</label>
                 <input
                   type="number"
                   v-model="huntItem.result"
-                  class="w-24 px-2 py-1 border rounded"
+                  class="w-24 px-2 py-1 border rounded bg-brown-dark text-gold"
                   @input="updateHuntItem(huntItem)"
                 />
               </div>
@@ -70,7 +68,7 @@
                   class="w-4 h-4"
                   @change="updateHuntItem(huntItem)"
                 />
-                <label class="text-sm">Bonus</label>
+                <label class="text-sm text-gold">Bonus</label>
               </div>
               
               <div class="flex items-center gap-2">
@@ -80,12 +78,12 @@
                   class="w-4 h-4"
                   @change="updateHuntItem(huntItem)"
                 />
-                <label class="text-sm">Super Bonus</label>
+                <label class="text-sm text-gold">Super Bonus</label>
               </div>
               
               <button
-                @click="removeHuntItem(huntItem.id)"
-                class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                @click.stop.prevent="removeHuntItem(huntItem.id)"
+                class="px-3 py-1 bg-orange-500 text-gold text-sm rounded hover:bg-orange-600"
               >
                 Remove
               </button>
@@ -93,7 +91,7 @@
           </div>
           
           <!-- Completion status -->
-          <div class="mt-2 flex items-center">
+          <!-- <div class="mt-2 flex items-center">
             <div class="flex items-center gap-2 mr-4">
               <input
                 type="checkbox"
@@ -101,7 +99,7 @@
                 class="w-4 h-4"
                 @change="updateHuntItem(huntItem)"
               />
-              <label class="text-sm">Mark as Completed</label>
+              <label class="text-sm text-gold">Mark as Completed</label>
             </div>
             
             <span 
@@ -114,31 +112,30 @@
             >
               {{ huntItem.completed ? 'Completed' : 'Pending' }}
             </span>
-          </div>
+          </div> -->
+        </div>
+        <div v-else class="text-center py-8">
+          <p class="text-gold">No items in the hunt list yet.</p>
+          <p class="text-gold mt-2">
+            Add items from the <a :href="`${basePath}suggestions/${props.eventId}`" class="text-blue-500 underline">Suggestions page</a>.
+          </p>
         </div>
       </div>
-      
-      <!-- Empty state -->
-      <div v-else class="text-center py-8">
-        <p class="text-gray-500">No items in the hunt list yet.</p>
-        <p class="text-gray-500 mt-2">
-          Add items from the <a :href="`${basePath}suggestions/${props.eventId}`" class="text-blue-500 underline">Suggestions page</a>.
-        </p>
-      </div>
-      
-      <!-- Summary section -->
-      <div v-if="huntList.length > 0" class="mt-8 p-4 border rounded-lg bg-gray-50">
-        <h3 class="text-lg font-semibold mb-2">Hunt Summary</h3>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
-          <div class="p-3 bg-white rounded shadow">
-            <div class="text-sm text-gray-600">Total Items</div>
-            <div class="text-xl font-bold">{{ huntList.length }}</div>
+
+    </div>
+    <!-- Summary section -->
+    <div v-if="huntList.length > 0" class="mt-8 p-4 border rounded-lg bg-brown border-orange">
+      <h3 class="text-lg font-semibold mb-2 text-gold">Hunt Summary</h3>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+        <div class="p-3 bg-brown rounded shadow">
+          <div class="text-sm text-gold">Total Items</div>
+          <div class="text-xl font-bold">{{ huntList.length }}</div>
           </div>
-          <div class="p-3 bg-white rounded shadow">
-            <div class="text-sm text-gray-600">Total Result</div>
+          <div class="p-3 bg-brown rounded shadow">
+            <div class="text-sm text-gold">Total Result</div>
             <div class="text-xl font-bold">{{ calculateTotalResult() }}</div>
           </div>
-          <div class="p-3 bg-white rounded shadow">
+          <div class="p-3 bg-brown rounded shadow">
             <div 
               :class="[
                 'text-xl font-bold', 
@@ -149,37 +146,35 @@
                     : ''
               ]"
             >
-              <div class="text-sm text-gray-600">Profit/Loss</div>
+              <div class="text-sm text-gold">Profit/Loss</div>
               {{ calculateProfit() > 0 ? '+' : '' }}{{ calculateProfit() }}
             </div>
           </div>
         </div>
         
-        <div class="flex items-center gap-4 p-3 bg-white rounded shadow mb-4">
+        <div class="flex items-center gap-4 p-3 bg-brown rounded shadow mb-4">
           <div class="flex-1 flex items-center gap-2">
-            <label class="text-sm text-gray-600">Starting Balance:</label>
+            <label class="text-sm text-gold">Starting Balance:</label>
             <input
               type="number"
               v-model="startingBalance"
-              class="w-32 px-2 py-1 border rounded"
+              class="w-32 px-2 py-1 border rounded bg-brown-dark text-gold"
               @input="updateStartingBalance"
               placeholder="Enter starting balance"
             />
           </div>
           <!-- <div class="flex-1 flex items-center gap-2">
-            <label class="text-sm text-gray-600">Current Balance:</label>
+            <label class="text-sm text-gold">Current Balance:</label>
             <input
               type="number"
               v-model="currentBalance"
-              class="w-32 px-2 py-1 border rounded"
+              class="w-32 px-2 py-1 border rounded bg-brown-dark text-gold"
               @input="updateCurrentBalance"
               placeholder="Enter current balance"
             />
           </div> -->
         </div>
       </div>
-    </div>
-  </div>
 </template>
 
 <script setup lang="ts">
@@ -327,24 +322,37 @@ const updateHuntItem = async (item: any) => {
 
 // Remove a hunt item
 const removeHuntItem = async (itemId: string) => {
+  if (!itemId) {
+    console.error('Invalid item ID for removal');
+    return;
+  }
+
   try {
-    log('Removing hunt item:', itemId);
+    log('Removing hunt item with ID:', itemId);
     
-    const { error } = await supabase
+    // First update local state for immediate UI feedback
+    const originalList = [...huntList.value];
+    huntList.value = huntList.value.filter(item => item.id !== itemId);
+    
+    // Then perform the database operation with the direct Supabase client
+    const { error, data } = await supabase
       .from('hunt_items')
       .delete()
-      .eq('id', itemId);
+      .eq('id', itemId)
+      .select();
 
     if (error) {
       console.error('Error removing hunt item:', error);
+      // If there was an error, restore the original list
+      huntList.value = originalList;
       return;
     }
     
-    // Update the local state
-    huntList.value = huntList.value.filter(item => item.id !== itemId);
-    log('Hunt item removed:', itemId);
+    log('Hunt item removed successfully:', data);
   } catch (e) {
     console.error('Exception during hunt item removal:', e);
+    // Refetch the list to ensure UI is in sync with the database
+    await fetchHuntList();
   }
 };
 

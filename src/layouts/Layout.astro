@@ -1,6 +1,6 @@
 ---
-import { getSupabaseClient } from '../lib/supabase';
 import { isAuthenticated, getCurrentUser } from '../lib/auth';
+import logoImage from '../assets/heaton-logotype.png';
 
 interface Props {
   title: string;
@@ -31,10 +31,10 @@ if (!skipAuth) {
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
   </head>
-  <body class="bg-gray-100">
-    <nav class="bg-blue-600 text-white p-4">
-      <div class="container mx-auto flex justify-between items-center">
-        <h1 class="text-xl font-bold">Suggestion App</h1>
+  <body class="bg-brown text-gold min-h-screen" style="background-color: #3c1600">
+    <nav class="bg-zinc-800 text-white p-4" style="background: transparent">
+      <div class="container mx-auto flex justify-center items-center">
+        <img src={logoImage.src} alt="Heaton Logotype" class="h-96 w-auto" />
         {authenticated && (
           <div class="flex gap-4 items-center">
             {isAdmin ? (

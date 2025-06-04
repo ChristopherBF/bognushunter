@@ -1,12 +1,13 @@
 <template>
   <div class="space-y-6">
-    <div class="bg-white rounded-lg shadow p-6">
+    <div class="bg-brown rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4">Available Games</h2>
       
       <!-- Search input -->
       <div class="mb-4">
         <div class="relative">
           <input
+            style="background-color: #592101"
             v-model="searchTerm"
             @input="handleSearchInput"
             type="text"
@@ -15,7 +16,7 @@
           />
           <button 
             @click="resetAndFetchGames"
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold hover:text-gray-700 bg-orange"
           >
             <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
@@ -26,15 +27,15 @@
       
       <!-- Loading indicator -->
       <div v-if="loading" class="flex justify-center my-8">
-        <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        <div class="w-12 h-12 border-4 border-orange border-t-transparent rounded-full animate-spin"></div>
       </div>
       
       <!-- Games grid -->
-      <div v-else class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <div v-else-if="!loading && games.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         <div
           v-for="game in games"
           :key="game._id || game.game_id"
-          class="flex flex-col p-4 border rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-200 hover:shadow-md"
+          class="flex flex-col p-4 border rounded-lg hover:bg-orange-900/40 cursor-pointer transition-all duration-200 hover:shadow-md"
           @click="suggestItem(game.name)"
         >
           <!-- Game thumbnail with background -->
@@ -46,19 +47,16 @@
               @error="handleImageError($event, game)"
             />
             <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-            <div class="absolute bottom-0 left-0 right-0 p-2 text-white">
-              <span class="font-medium text-sm">{{ formatGameName(game.name) }}</span>
-            </div>
           </div>
           
           <!-- Game details -->
           <div class="flex flex-col flex-grow">
             <div class="flex justify-between items-start mb-2">
-              <span class="font-medium text-gray-800">{{ formatGameName(game.name) }}</span>
+              <span class="font-medium text-gold">{{ formatGameName(game.name) }}</span>
               <span v-if="game.rtp" class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">RTP: {{ game.rtp }}%</span>
             </div>
             
-            <div class="text-gray-600 text-sm mb-2">{{ game.provider }}</div>
+            <div class="text-gold text-sm mb-2">{{ game.provider }}</div>
             
             <!-- Features tags -->
             <div v-if="game.features && game.features.length" class="flex flex-wrap gap-1 mt-auto">
@@ -75,8 +73,8 @@
       </div>
       
       <!-- No results message -->
-      <div v-if="!loading && games.length === 0" class="text-center py-8">
-        <p class="text-gray-500">No games found. Try a different search term.</p>
+      <div v-else-if="!loading && games.length === 0 && searchTerm.trim() !== ''" class="text-center py-8">
+        <p class="text-gold">No games found. Try a different search term.</p>
       </div>
       
       <!-- Pagination controls -->
@@ -84,7 +82,7 @@
         <button 
           @click="prevPage" 
           :disabled="currentPage === 1 || !hasPrevPage"
-          class="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 border rounded-md bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Previous
         </button>
@@ -94,20 +92,20 @@
         <button 
           @click="nextPage" 
           :disabled="!hasNextPage"
-          class="px-4 py-2 border rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-4 py-2 border rounded-md bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Next
         </button>
       </div>
     </div>
 
-    <div class="bg-white rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4">Your Suggestions</h2>
+    <div class="rounded-lg shadow p-6">
+      <h2 class="text-xl font-semibold mb-4 text-orange">Your Suggestions</h2>
       <div class="space-y-4">
         <div
           v-for="item in suggestedItems"
           :key="item"
-          class="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50"
+          class="flex items-center justify-between p-3 border rounded-lg hover:bg-orange"
         >
           <span>{{ formatGameName(item) }}</span>
           <span class="text-green-600">Suggested</span>
@@ -339,11 +337,7 @@ onMounted(() => {
   
   console.log('Component initialization complete');
   
-  // Force a second fetch after a short delay to ensure it runs
-  setTimeout(() => {
-    console.log('Forcing second fetchGames call after timeout');
-    fetchGames();
-  }, 2000);
+  // No longer need the duplicate fetch
 });
 
 onUnmounted(() => {
