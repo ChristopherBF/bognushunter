@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-6">
     <div class="bg-brown rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4">Available Games</h2>
+      <h2 class="text-xl font-semibold mb-4">§</h2>
       
       <!-- Search input -->
       <div class="mb-4">
@@ -265,7 +265,9 @@ const prevPage = () => {
 
 // Suggest an item
 const suggestItem = async (item: string) => {
-  if (suggestedItems.value.includes(item)) return;
+  if (suggestedItems.value.includes(item)) {
+    return;
+  }
   
   // Find the game data for the selected item
   const selectedGame = games.value.find(game => game.name === item);
@@ -295,7 +297,6 @@ const suggestItem = async (item: string) => {
     });
   } catch (error) {
     console.error('Error suggesting item:', error);
-    alert('Failed to suggest item. Please try again.');
   }
 };
 

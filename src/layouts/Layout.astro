@@ -1,6 +1,6 @@
 ---
 import { isAuthenticated, getCurrentUser } from '../lib/auth';
-import logoImage from '../assets/heaton-logotype.png';
+import logoImage from '../assets/new-logo.png';
 
 interface Props {
   title: string;
@@ -35,7 +35,7 @@ if (!skipAuth) {
     <nav class="bg-zinc-800 text-white p-4" style="background: transparent">
       <div class="container mx-auto flex justify-center items-center">
         <img src={logoImage.src} alt="Heaton Logotype" class="h-96 w-auto" />
-        {authenticated && (
+        <!-- {authenticated && (
           <div class="flex gap-4 items-center">
             {isAdmin ? (
               <a href="/admin" class="hover:underline">Admin Dashboard</a>
@@ -52,7 +52,7 @@ if (!skipAuth) {
               </button>
             </div>
           </div>
-        )}
+        )} -->
       </div>
     </nav>
     <main class="container mx-auto p-6">
