@@ -66,7 +66,12 @@ export function subscribeSuggestions(eventId: string, callback: SubscriptionCall
     .channel(channelId)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'suggestions' },
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'suggestions',
+        filter: `event_id=eq.${eventId}` // Add filter for event_id to only get relevant changes
+      },
       (rawPayload: any) => {
         console.log('[RealTime] [DEBUG] postgres_changes callback FIRED');
         console.log('[RealTime] [DEBUG] Raw payload:', rawPayload);
@@ -81,11 +86,9 @@ export function subscribeSuggestions(eventId: string, callback: SubscriptionCall
           console.log('[RealTime] [DEBUG] payload.new.event_id:', payload.new.event_id, 'expected:', eventId);
         }
         
-        // Only trigger callbacks if the event_id matches
-        if (payload.new && payload.new.event_id === eventId) {
-          console.log('[RealTime] [DEBUG] Matched event ID, triggering callbacks');
-          activeSubscriptions[channelId].callbacks.forEach((cb: SubscriptionCallback<SuggestionPayload>) => cb(payload));
-        }
+        // We can now trust that all events are for this event_id due to the filter
+        console.log('[RealTime] [DEBUG] Triggering callbacks for event:', eventId);
+        activeSubscriptions[channelId].callbacks.forEach((cb: SubscriptionCallback<SuggestionPayload>) => cb(payload));
       }
     )
     .subscribe();
@@ -150,15 +153,18 @@ export function subscribeHuntItems(eventId: string, callback: SubscriptionCallba
     .channel(channelId)
     .on(
       'postgres_changes',
-      { event: '*', schema: 'public', table: 'hunt_items' },
+      { 
+        event: '*', 
+        schema: 'public', 
+        table: 'hunt_items',
+        filter: `event_id=eq.${eventId}` // Add filter for event_id to only get relevant changes
+      },
       (payload: HuntItemPayload) => {
         console.log('[RealTime] Received hunt item change');
         
-        // Only trigger callbacks if the event_id matches
-        if (payload.new && payload.new.event_id === eventId) {
-          console.log('[RealTime] Matched event ID, triggering callbacks');
-          activeSubscriptions[channelId].callbacks.forEach((cb: SubscriptionCallback<HuntItemPayload>) => cb(payload));
-        }
+        // We can now trust that all events are for this event_id due to the filter
+        console.log('[RealTime] Triggering callbacks for hunt item change in event:', eventId);
+        activeSubscriptions[channelId].callbacks.forEach((cb: SubscriptionCallback<HuntItemPayload>) => cb(payload));
       }
     )
     .subscribe();

@@ -7,57 +7,64 @@
         <button
           ref="createEventButtonRef"
           type="button"
+          @click="showCreateEventModal = true"
           class="px-6 py-3 font-display bg-orange-700 text-gold rounded shadow-md hover:bg-orange-800 transform hover:scale-105 transition-transform"
         >
           Create Hunt
         </button>
       </div>
       <div class="space-y-4">
-        <div
-          v-for="event in events"
-          :key="event.id"
-          class="p-4 border border-streamer-text-secondary/40 rounded-lg hover:bg-orange-900/40 cursor-pointer shadow"
-        >
-          <div class="flex justify-between items-center">
-            <span>{{ formatDate(event.date) }}</span>
-            <div class="flex items-center gap-2">
-              <span class="text-sm text-streamer-text-secondary">{{ event.suggestions_count }} suggestions</span>
-              <div class="flex space-x-2">
-                <button 
-                  @click="viewSuggestions(event.id)"
-                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
-                >
-                  View Suggestions
-                </button>
-                <button 
-                  @click="viewSummary(event.id)"
-                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
-                >
-                  View Summary
-                </button>
-                <button 
-                  @click="viewHuntList(event.id)"
-                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
-                >
-                  Hunt List
-                </button>
-                <button 
-                  @click="shareSuggestionLink(event.id)"
-                  class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150"
-                >
-                  Share Link
-                </button>
-              </div>
-            </div>
-          </div>
-          <!-- Notification for copied link -->
-          <div v-if="copiedEventId === event.id" class="mt-2 text-sm text-streamer-green-accent flex items-center">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
-            </svg>
-            Link copied to clipboard!
-          </div>
+        <EventListItem 
+          v-for="event in events" 
+          :key="event.id" 
+          :event="event"
+          @view-suggestions="viewSuggestions"
+          @view-summary="viewSummary"
+          @view-hunt-list="viewHuntList"
+          @share-link="shareSuggestionLink"
+        />
+        <!-- Notification for copied link -->
+        <div v-if="copiedEventId" class="mt-2 text-sm text-streamer-green-accent flex items-center">
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Link copied to clipboard!
         </div>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Create Event Modal -->
+  <div v-if="showCreateEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div class="bg-brown-dark border-2 border-orange rounded-xl shadow-lg p-6 w-96 max-w-md">
+      <h3 class="text-xl font-display text-gold mb-4">Create New Hunt</h3>
+      
+      <div class="mb-4">
+        <label for="startingBalance" class="block text-sm font-medium text-gold mb-1">Starting Balance</label>
+        <input
+          id="startingBalance"
+          v-model="startingBalance"
+          type="number"
+          min="0"
+          step="1"
+          class="w-full px-3 py-2 border border-orange rounded bg-brown text-gold focus:outline-none focus:ring-2 focus:ring-orange"
+          placeholder="Enter starting balance"
+        />
+      </div>
+      
+      <div class="flex justify-end space-x-3 mt-6">
+        <button 
+          @click="showCreateEventModal = false"
+          class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition-colors"
+        >
+          Cancel
+        </button>
+        <button 
+          @click="handleCreateEvent()"
+          class="px-4 py-2 bg-orange-700 text-gold rounded hover:bg-orange-600 transition-colors"
+        >
+          Create Hunt
+        </button>
       </div>
     </div>
   </div>
@@ -67,6 +74,11 @@
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
 import { subscribeSuggestions, unsubscribeAll, type SuggestionPayload } from '../../lib/realtime';
+import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
+import { createEvent as createEventService, fetchEvents as fetchEventsService } from '../../services/eventService';
+import EventListItem from './EventListItem.vue';
+import 'vue3-toastify/dist/index.css';
+import '../../styles/toast.css';
 
 // Debug flag
 const DEBUG = true;
@@ -88,6 +100,10 @@ const supabase = getSupabaseClient();
 const events = ref<any[]>([]);
 const copiedEventId = ref<string | null>(null);
 
+// Modal state
+const showCreateEventModal = ref(false);
+const startingBalance = ref(1000); // Default starting balance
+
 // Handle the create event
 const handleCreateEvent = async (e?: Event) => {
   log('Create event triggered', e);
@@ -100,33 +116,54 @@ const handleCreateEvent = async (e?: Event) => {
   
   if (!props.userId) {
     console.error('Error: No user ID provided');
+    showError('Error: User ID is required to create a hunt');
+    return;
+  }
+  
+  // Validate starting balance
+  if (startingBalance.value <= 0) {
+    showWarning('Starting balance must be greater than zero');
     return;
   }
   
   try {
-    log('Inserting new event into suggestion_events table');
-    const { data, error } = await supabase.from('suggestion_events').insert([
-      {
-        date: new Date().toISOString(),
-        created_by: props.userId,
-        starting_balance: 0
-      }
-    ]);
-
+    log('Creating new hunt using event service with starting balance:', startingBalance.value);
+    showInfo('Creating new hunt...');
+    
+    // Use the createEventService function with the starting balance
+    const huntName = `Hunt ${new Date().toLocaleDateString()}`;
+    const { event, error } = await createEventService(huntName, props.userId, startingBalance.value);
+    
     if (error) {
       console.error('Error creating event:', error);
+      showError(`Failed to create hunt: ${error.message}`);
       return;
     }
     
-    log('Event created successfully:', data);
+    if (!event) {
+      console.error('Failed to create event: No event data returned');
+      showError('Failed to create hunt: Unknown error');
+      return;
+    }
+    
+    log('Event created successfully:', event);
+    showSuccess('Hunt created successfully!');
+    
+    // Close the modal
+    showCreateEventModal.value = false;
+    
+    // Reset starting balance for next time
+    startingBalance.value = 1000;
+    
+    // Refresh the events list
     await fetchEvents();
-  } catch (e) {
-    console.error('Exception during event creation:', e);
+  } catch (error) {
+    console.error('Error in handleCreateEvent:', error);
+    showError('An unexpected error occurred while creating the hunt');
   }
 };
 
-// Keep the original createEvent function for compatibility
-const createEvent = handleCreateEvent;
+// No longer need a separate createEvent function since we're using the service
 
 // Set up real-time subscriptions for all events
 const setupRealTimeSubscriptions = () => {
@@ -170,14 +207,9 @@ onMounted(async () => {
     // Wait for the next tick to ensure the DOM is fully rendered
     await nextTick();
     
-    // Set up the click event listener for the create event button
-    if (createEventButtonRef.value) {
-      log('Adding event listener to create event button');
-      createEventButtonRef.value.addEventListener('click', handleCreateEvent);
-      createEventButtonRef.value.addEventListener('mousedown', () => {
-        log('Button mousedown event detected');
-      });
-    } else {
+    // No need to add event listeners to the button anymore since we're using v-on:click
+    // The button now just opens the modal, and the actual event creation happens from the modal
+    if (!createEventButtonRef.value) {
       console.error('Create event button ref not found');
     }
     
@@ -227,12 +259,14 @@ const formatDate = (dateString: string) => {
 // Changed to navigate to a summary page instead of showing inline
 const viewSummary = (eventId: string) => {
   log('Navigating to summary page for event:', eventId);
+  showInfo('Loading summary page...');
   const basePath = import.meta.env.BASE_URL || '/';
   window.location.href = `${basePath}summary/${eventId}`;
 };
 
 const viewHuntList = (eventId: string) => {
   log('Navigating to hunt list page for event:', eventId);
+  showInfo('Loading hunt list page...');
   const basePath = import.meta.env.BASE_URL || '/';
   window.location.href = `${basePath}huntlist/${eventId}`;
 };
@@ -253,6 +287,7 @@ const shareSuggestionLink = (eventId: string) => {
     .then(() => {
       log('Link copied to clipboard:', suggestionUrl);
       copiedEventId.value = eventId;
+      showSuccess('Link copied to clipboard!');
       
       // Clear the copied notification after a few seconds
       setTimeout(() => {
@@ -263,45 +298,41 @@ const shareSuggestionLink = (eventId: string) => {
     })
     .catch(err => {
       console.error('Error copying link to clipboard:', err);
-      alert('Failed to copy link. Please try again.');
+      showError('Failed to copy link. Please try again.');
     });
 };
 
 const fetchEvents = async () => {
     log('Fetching events');
     
-    // First, fetch all events
-    const { data: eventsData, error: eventsError } = await supabase
-      .from('suggestion_events')
-      .select('*')
-      .order('date', { ascending: false });
-
-    if (eventsError) {
-      console.error('Error fetching events:', eventsError);
-      return;
-    }
-    
-    // Then, for each event, get the count of suggestions
-    const eventsWithCounts = await Promise.all((eventsData || []).map(async (event) => {
-      const { count, error: countError } = await supabase
-        .from('suggestions')
-        .select('*', { count: 'exact', head: true })
-        .eq('event_id', event.id);
-        
-      if (countError) {
-        console.error(`Error counting suggestions for event ${event.id}:`, countError);
-        return { ...event, suggestions_count: 0 };
+    try {
+      if (!props.userId) {
+        console.error('Error: No user ID provided for fetching events');
+        showError('Error: User ID is required to fetch hunts');
+        return;
       }
       
-      return { ...event, suggestions_count: count || 0 };
-    }));
-    
-    events.value = eventsWithCounts;
-    log('Events fetched:', events.value);
+      // Use the fetchEventsService to get events
+      const { events: fetchedEvents, error } = await fetchEventsService(props.userId);
+      
+      if (error) {
+        console.error('Error fetching events:', error);
+        showError(`Failed to fetch hunts: ${error.message}`);
+        return;
+      }
+      
+      // Update the events ref with the fetched events
+      events.value = fetchedEvents;
+      log('Events fetched:', events.value);
+    } catch (error) {
+      console.error('Error in fetchEvents:', error);
+      showError('Failed to load hunts. Please try again.');
+    }
 };
 
 const viewSuggestions = (eventId: string) => {
   log('Navigating to suggestions page for event:', eventId);
+  showInfo('Loading suggestions page...');
   const basePath = import.meta.env.BASE_URL || '/';
   window.location.href = `${basePath}suggestions/${eventId}`;
 };

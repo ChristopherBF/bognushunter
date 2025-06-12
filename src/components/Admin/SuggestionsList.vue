@@ -8,65 +8,58 @@
       
       <!-- Grid layout for suggestions -->
       <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
-        <div
+        <SuggestionItem
           v-for="suggestion in suggestions"
           :key="suggestion.id"
-          class="border rounded-lg hover:bg-orange-900/40 cursor-pointer transition-all hover:shadow-md"
-          :class="{ 'bg-green-100': recentlyAddedSuggestions.includes(suggestion.item) }"
-          @click="addToHunt(suggestion)"
-        >
-          <div class="p-4 flex flex-col items-center text-center">
-            <!-- Game thumbnail with background -->
-            <div class="relative w-full h-40 mb-3 overflow-hidden rounded-md">
-              <img 
-                :src="suggestion.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/') || suggestion.url_thumb" 
-                :alt="suggestion.item" 
-                class="w-full h-full object-cover"
-                @error="handleImageError($event, suggestion)"
-              />
-              <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
-            </div>
-            
-            <!-- Item name and count -->
-            <div class="flex justify-between items-start w-full">
-              <span class="font-medium text-gold">{{ formatItemName(suggestion.item) }}</span>
-              <span class="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded-full">
-                x{{ suggestion.count }}
-              </span>
-            </div>
-          </div>
-        </div>
+          :suggestion="suggestion"
+          :recently-added="recentlyAddedSuggestions.includes(suggestion.item)"
+          @add-to-hunt="addToHunt"
+          @image-error="handleSuggestionImageError"
+        />
       </div>
     </div>
 
     <div class="rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4 text-orange">Hunt List</h2>
       <div class="space-y-4">
-        <div
+        <HuntListItemSimple
           v-for="huntItem in huntList"
           :key="huntItem.id"
-          class="p-3 border rounded-lg hover:bg-orange-900/40"
-        >
-          <div class="flex items-center justify-between">
-            <span>{{ formatItemName(huntItem.item) }}</span>
-            <button
-              @click.stop.prevent="removeFromHunt(huntItem.id)"
-              class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800"
-            >
-              Remove
-            </button>
-          </div>
-        </div>
+          :hunt-item="huntItem"
+          @remove="removeFromHunt"
+        />
       </div>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, onUnmounted } from 'vue';
-import { getSupabaseClient, supabase as supabaseClient } from '../../lib/supabase';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
+import { toast } from 'vue3-toastify';
+import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
 import { formatItemName } from '../../lib/utils';
 import { subscribeSuggestions, subscribeHuntItems, type SuggestionPayload, type HuntItemPayload } from '../../lib/realtime';
+import { getSupabaseClient } from '../../lib/supabase';
+import 'vue3-toastify/dist/index.css';
+import '../../styles/toast.css';
+import { 
+  fetchSuggestions as fetchSuggestionsService, 
+  saveCustomThumb as saveCustomThumbService, 
+  fetchGameDataForSuggestions as fetchGameDataService, 
+  addSuggestion as addSuggestionService,
+  type Suggestion
+} from '../../services/suggestionService';
+import { 
+  fetchHuntList as fetchHuntListService, 
+  addToHunt as addToHuntService, 
+  removeFromHunt as removeFromHuntService,
+  updateHuntItem as updateHuntItemService,
+  type HuntItem
+} from '../../services/huntItemService';
+
+// Import new components
+import SuggestionItem from './SuggestionItem.vue';
+import HuntListItemSimple from './HuntListItemSimple.vue';
 
 // Debug flag
 const DEBUG = true;
@@ -92,27 +85,23 @@ const supabase = getSupabaseClient();
 const suggestions = ref<any[]>([]);
 const huntList = ref<any[]>([]);
 const recentlyAddedSuggestions = ref<string[]>([]);
+const initialHuntListLoaded = ref<boolean>(false);
+const initialSuggestionsLoaded = ref<boolean>(false);
 
-// Save custom thumbnail and background URLs to the database
+// Save custom thumbnail and background URLs to the database using the service
 const saveCustomThumb = async (suggestionId: string, thumbUrl: string, backgroundUrl: string | null = null) => {
   try {
-    log('Saving custom thumbnail and background for suggestion:', suggestionId);
+    const { success, error } = await saveCustomThumbService(suggestionId, thumbUrl, backgroundUrl);
     
-    const updateData: any = { custom_thumb: thumbUrl };
-    if (backgroundUrl) {
-      updateData.url_background = backgroundUrl;
-    }
-    
-    const { error } = await supabaseClient
-      .from('suggestions')
-      .update(updateData)
-      .eq('id', suggestionId);
-      
     if (error) {
-      console.error('Error saving custom thumbnail and background:', error);
+      console.error('Error saving custom thumbnail:', error);
+      return false;
     }
+    
+    return success;
   } catch (e) {
-    console.error('Exception saving custom thumbnail and background:', e);
+    console.error('Exception during saving custom thumbnail:', e);
+    return false;
   }
 };
 
@@ -121,130 +110,52 @@ const fetchSuggestions = async () => {
   try {
     log('Fetching suggestions for event:', props.eventId);
     
-    // First fetch all suggestions for this event
-    const { data: rawSuggestions, error: suggestionError } = await supabaseClient
-      .from('suggestions')
-      .select('id, item, user_id, created_at, event_id, custom_thumb, url_background')
-      .eq('event_id', props.eventId);
+    // Fetch suggestions using the service
+    const { suggestions: processedSuggestions, error } = await fetchSuggestionsService(props.eventId);
 
-    if (suggestionError) {
-      console.error('Error fetching suggestions:', suggestionError);
+    if (error) {
+      console.error('Error fetching suggestions:', error);
+      showError(`Failed to load suggestions: ${error.message}`);
       return;
     }
     
-    // Process the raw suggestions to count occurrences of each item
-    const suggestionCounts = new Map();
-    const suggestionIds = new Map();
-    const suggestionThumbs = new Map();
-    
-    // Count occurrences and keep track of the first ID, thumbnail, and background for each unique item
-    const suggestionBackgrounds = new Map();
-    
-    rawSuggestions?.forEach(suggestion => {
-      const item = suggestion.item;
-      const count = suggestionCounts.get(item) || 0;
-      
-      // Store the first ID we encounter for each unique item
-      if (!suggestionIds.has(item)) {
-        suggestionIds.set(item, suggestion.id);
-        // Store the thumbnail if available
-        if (suggestion.custom_thumb) {
-          suggestionThumbs.set(item, suggestion.custom_thumb);
-        }
-        // Store the background if available
-        if (suggestion.url_background) {
-          suggestionBackgrounds.set(item, suggestion.url_background);
-        }
-      }
-      
-      suggestionCounts.set(item, count + 1);
-    });
-    
-    // Find the original suggestion object for each unique item
-    const originalSuggestions = new Map();
-    rawSuggestions?.forEach(suggestion => {
-      if (!originalSuggestions.has(suggestion.item) && suggestionIds.get(suggestion.item) === suggestion.id) {
-        originalSuggestions.set(suggestion.item, suggestion);
-      }
-    });
-    
-    // Convert to the format expected by the UI
-    const processedSuggestions = Array.from(suggestionCounts.entries()).map(([item, count]) => {
-      // Get the original suggestion object
-      const originalSuggestion = originalSuggestions.get(item) || {};
-      
-      return {
-        // Keep the original suggestion ID
-        id: suggestionIds.get(item),
-        // Keep the original suggestion object properties
-        ...originalSuggestion,
-        // Override with aggregated data
-        item,
-        count,
-        event_id: props.eventId,
-        // Use stored thumbnail and background if available
-        custom_thumb: suggestionThumbs.get(item) || null,
-        url_background: suggestionBackgrounds.get(item) || null,
-        url_thumb: null,
-        provider: ''
-      };
-    });
-    
-    // Sort by count in descending order
-    processedSuggestions.sort((a, b) => b.count - a.count);
-    
     // Try to fetch game data for each suggestion that doesn't already have a thumbnail
     try {
-      // We'll use the API to search for each game
-      for (const suggestion of processedSuggestions) {
-        // Skip if we already have a thumbnail
-        if (suggestion.custom_thumb) {
-          log('Using existing thumbnail for:', suggestion.item);
-          continue;
-        }
-        
-        log('Fetching thumbnail for:', suggestion.item);
-        const response = await fetch(`${import.meta.env.BASE_URL || '/'}api/games`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({ 
-            search: suggestion.item,
-            page: 1,
-            perPage: 1
-          }),
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.games && data.games.length > 0) {
-            // Find the best match
-            const exactMatch = data.games.find(g => 
-              g.name.toLowerCase() === suggestion.item.toLowerCase()
-            );
-            const game = exactMatch || data.games[0];
-            
-            // Update the suggestion with game data
-            suggestion.custom_thumb = game.custom_thumb || game.url_thumb;
-            suggestion.url_background = game.url_background || null;
-            suggestion.provider = game.provider;
-            
-            // Save the thumbnail and background URLs to the database
-            await saveCustomThumb(suggestion.id, suggestion.custom_thumb, suggestion.url_background);
-          }
-        }
+      const baseUrl = import.meta.env.BASE_URL || '/';
+      const { updatedSuggestions, error: gameDataError } = await fetchGameDataService(processedSuggestions, baseUrl);
+      
+      if (gameDataError) {
+        console.error('Error fetching game data for suggestions:', gameDataError);
+        showWarning(`Some game thumbnails could not be loaded. Using placeholders instead.`);
+      } else {
+        // Use the updated suggestions with game data
+        suggestions.value = updatedSuggestions;
       }
     } catch (e) {
       console.error('Error fetching game data for suggestions:', e);
+      showWarning(`Some game thumbnails could not be loaded. Using placeholders instead.`);
       // Continue with placeholder images if game data fetch fails
+      suggestions.value = processedSuggestions;
     }
     
-    suggestions.value = processedSuggestions;
+    // Sort by count in descending order
+    suggestions.value.sort((a, b) => b.count - a.count);
+    
     log('Suggestions processed:', suggestions.value.length);
     console.log(suggestions);
+    
+    // Only show success toast on initial load, not on updates
+    if (!initialSuggestionsLoaded.value) {
+      initialSuggestionsLoaded.value = true;
+      if (suggestions.value.length > 0) {
+        showSuccess(`Loaded ${suggestions.value.length} suggestions`);
+      } else {
+        showInfo('No suggestions found for this hunt yet.');
+      }
+    }
   } catch (e) {
     console.error('Exception during suggestions fetching:', e);
+    showError(`Failed to load suggestions: ${e instanceof Error ? e.message : 'Unknown error'}`);
   }
 };
 
@@ -253,49 +164,32 @@ const fetchHuntList = async () => {
   try {
     log('Fetching hunt list for event:', props.eventId);
     
-    // First fetch hunt items without joins
-    const { data: huntItemsData, error: huntItemsError } = await supabaseClient
-      .from('hunt_items')
-      .select('*')
-      .eq('event_id', props.eventId);
+    // Use the service to fetch hunt items
+    const { huntItems, error } = await fetchHuntListService(props.eventId);
 
-    if (huntItemsError) {
-      console.error('Error fetching hunt items:', huntItemsError);
+    if (error) {
+      console.error('Error fetching hunt items:', error);
+      showError(`Failed to load hunt list: ${error.message}`);
       return;
     }
 
-    // Then fetch the related suggestions separately
-    if (huntItemsData && huntItemsData.length > 0) {
-      const suggestionIds = huntItemsData.map(item => item.suggestion_id);
-      
-      const { data: suggestionsData, error: suggestionsError } = await supabaseClient
-        .from('suggestions')
-        .select('id, item')
-        .in('id', suggestionIds);
-        
-      if (suggestionsError) {
-        console.error('Error fetching suggestions for hunt items:', suggestionsError);
-        return;
-      }
-      
-      // Create a map of suggestion id to item text
-      const suggestionMap = new Map();
-      suggestionsData?.forEach(suggestion => {
-        suggestionMap.set(suggestion.id, suggestion.item);
-      });
-      
-      // Join the data manually
-      huntList.value = huntItemsData.map(huntItem => ({
-        ...huntItem,
-        item: suggestionMap.get(huntItem.suggestion_id) || 'Unknown item'
-      }));
-    } else {
-      huntList.value = [];
-    }
+    // Update the local state
+    huntList.value = huntItems;
     
     log('Hunt list fetched:', huntList.value.length);
+    
+    // Only show success toast on initial load, not on updates
+    if (!initialHuntListLoaded.value) {
+      initialHuntListLoaded.value = true;
+      if (huntList.value.length > 0) {
+        showSuccess(`Hunt list loaded with ${huntList.value.length} items`);
+      } else {
+        showInfo('Hunt list is empty. Add items by clicking on suggestions.');
+      }
+    }
   } catch (e) {
     console.error('Exception during hunt list fetching:', e);
+    showError(`Failed to load hunt list: ${e instanceof Error ? e.message : 'Unknown error'}`);
   }
 };
 
@@ -308,77 +202,80 @@ const updateHuntItem = async (item: any) => {
       item.result !== null && 
       (item.bonus || item.super_bonus);
     
-    const { error } = await supabase
-      .from('hunt_items')
-      .update({
-        wager: item.wager,
-        result: item.result,
-        bonus: item.bonus,
-        super_bonus: item.super_bonus,
-        completed: isCompleted
-      })
-      .eq('id', item.id);
+    // Create a complete hunt item object for the service
+    const huntItemToUpdate: HuntItem = {
+      id: item.id,
+      event_id: item.event_id,
+      suggestion_id: item.suggestion_id,
+      wager: item.wager,
+      result: item.result,
+      bonus: item.bonus,
+      super_bonus: item.super_bonus,
+      completed: isCompleted,
+      custom_thumb: item.custom_thumb,
+      url_background: item.url_background,
+      item: item.item
+    };
+    
+    // Use the service to update the item
+    const { huntItem, error } = await updateHuntItemService(huntItemToUpdate);
 
     if (error) {
       console.error('Error updating hunt item:', error);
+      showError(`Failed to update hunt item: ${error.message}`);
+      return;
+    }
+    
+    if (!huntItem) {
+      console.error('Failed to update hunt item');
+      showError('Failed to update hunt item: Unknown error');
       return;
     }
     
     log('Hunt item updated:', item.id);
+    showSuccess('Hunt item updated successfully');
   } catch (e) {
     console.error('Exception during hunt item update:', e);
+    showError(`Failed to update hunt item: ${e instanceof Error ? e.message : 'Unknown error'}`);
   }
 };
 
 // Add a single suggestion to the hunt list
 const addToHunt = async (suggestion: any) => {
   try {
-    log('Adding suggestion to hunt list:', suggestion.item);
-    log('Suggestion object details:', JSON.stringify(suggestion, null, 2));
+    log('Adding suggestion to hunt list:', suggestion);
     
-    // Check if this item already exists in the hunt list
-    // We need to fetch the hunt list items with their associated suggestions to check
-    const { data: existingItems, error: fetchError } = await supabaseClient
-      .from('hunt_items')
-      .select('suggestion_id')
-      .eq('event_id', props.eventId);
-      
-    if (fetchError) {
-      console.error('Error checking existing hunt items:', fetchError);
+    // Check if the item is already in the hunt list
+    const existingItem = huntList.value.find(item => item.item === suggestion.item);
+    if (existingItem) {
+      log('Item already exists in hunt list');
+      showInfo(`"${formatItemName(suggestion.item)}" is already in the hunt list`);
       return;
     }
     
-    // Check if the suggestion is already in the hunt list
-    const itemExists = existingItems.some(item => item.suggestion_id === suggestion.id);
+    showInfo(`Adding "${formatItemName(suggestion.item)}" to hunt list...`);
     
-    if (itemExists) {
+    // Use the service to add the item to the hunt list
+    const { huntItem, error, exists } = await addToHuntService(props.eventId, suggestion);
+    
+    if (exists) {
       log('Item already exists in hunt list:', suggestion.item);
-      alert(`"${suggestion.item}" is already in the hunt list.`);
+      showInfo(`"${formatItemName(suggestion.item)}" is already in the hunt list.`);
       return;
     }
     
-    // Create the hunt item with thumbnail and background URLs
-    const { error } = await supabaseClient.from('hunt_items').insert({
-      event_id: props.eventId,
-      suggestion_id: suggestion.id,
-      wager: 1,
-      result: 0,
-      bonus: false,
-      super_bonus: false,
-      completed: false,
-      custom_thumb: suggestion.custom_thumb || null,
-      url_background: suggestion.url_background || null
-    });
-
     if (error) {
       console.error('Error adding suggestion to hunt list:', error);
+      showError(`Failed to add "${formatItemName(suggestion.item)}" to hunt list: ${error.message}`);
       return;
     }
     
     await fetchHuntList();
     log('Suggestion added to hunt list:', suggestion.item);
+    showSuccess(`"${formatItemName(suggestion.item)}" added to hunt list!`);
   } catch (e) {
     console.error('Exception during adding suggestion to hunt list:', e);
+    showError(`Failed to add "${formatItemName(suggestion.item)}" to hunt list: ${e instanceof Error ? e.message : 'Unknown error'}`);
   }
 };
 
@@ -386,6 +283,7 @@ const addToHunt = async (suggestion: any) => {
 const removeFromHunt = async (id: string) => {
   if (!id) {
     console.error('Invalid hunt item ID for removal');
+    showError('Cannot remove item: Invalid ID');
     return;
   }
 
@@ -395,59 +293,45 @@ const removeFromHunt = async (id: string) => {
   try {
     log('Removing hunt item with ID:', id);
     
-    // Log authentication state for debugging
-    const { data: userData } = await supabaseClient.auth.getUser();
-    console.log('Current user:', userData);
+    // Get the item name before removing it for the toast message
+    const itemToRemove = huntList.value.find(item => item.id === id);
+    const itemName = itemToRemove ? formatItemName(itemToRemove.item) : 'Item';
     
     // First update local state for immediate UI feedback (optimistic update)
     huntList.value = huntList.value.filter(item => item.id !== id);
     
+    // Show info toast for the removal process
+    showInfo(`Removing "${itemName}" from hunt list...`);
+    
     // Make sure we have a valid event ID
     if (!props.eventId) {
       console.error('Missing event ID for hunt item removal');
+      showError('Cannot remove item: Missing event ID');
       huntList.value = originalList;
       return;
     }
     
-    // Log the deletion attempt for debugging
-    console.log('Attempting to delete hunt item with ID:', id);
-    
-    // First, try to get the item to confirm it exists
-    const { data: itemToDelete, error: fetchError } = await supabaseClient
-      .from('hunt_items')
-      .select('*')
-      .eq('id', id)
-      .single();
-      
-    if (fetchError) {
-      console.error('Error fetching hunt item before deletion:', fetchError);
-      huntList.value = originalList;
-      return;
-    }
-    
-    console.log('Item to delete:', itemToDelete);
-    
-    // Check RLS policies by trying to get the session
-    const { data: sessionData } = await supabaseClient.auth.getSession();
-    console.log('Current session:', sessionData);
-    
-    // Perform the deletion with explicit table name and condition
-    const { error, data } = await supabaseClient
-      .from('hunt_items')
-      .delete()
-      .eq('id', id)
-      .select();
-
-    console.log('Delete response data:', data);
+    // Use the service to remove the item
+    const { success, error, data } = await removeFromHuntService(id);
     
     if (error) {
       console.error('Error removing hunt item:', error);
       // Restore original list if there was an error
       huntList.value = originalList;
+      showError(`Failed to remove item: ${error.message}`);
+      return;
+    }
+    
+    if (!success) {
+      console.error('Failed to remove hunt item');
+      // Restore original list if there was an error
+      huntList.value = originalList;
+      showError('Failed to remove item: Unknown error');
       return;
     }
     
     log('Hunt item removed successfully from database');
+    showSuccess(`"${itemName}" removed from hunt list!`);
     
     // Force a refetch to ensure UI is in sync with the database
     await fetchHuntList();
@@ -455,6 +339,8 @@ const removeFromHunt = async (id: string) => {
     console.error('Exception during removing hunt item:', e);
     // Restore original list on exception
     huntList.value = originalList;
+    // Show error toast
+    showError(`An error occurred while removing the item: ${e instanceof Error ? e.message : 'Unknown error'}`);
     // Refetch the list to ensure UI is in sync with the database
     await fetchHuntList();
   }
@@ -542,11 +428,45 @@ onMounted(async () => {
   }
 });
 
-// Handle image errors
+// Handle image errors from SuggestionItem component
+const handleSuggestionImageError = async ({ suggestionId, type }: { suggestionId: string, type: string }) => {
+  const suggestion = suggestions.value.find(s => s.id === suggestionId);
+  if (!suggestion) return;
+
+  try {
+    log('Handling image error for suggestion:', suggestion.item);
+    
+    // Try to fetch game data to get a thumbnail
+    const baseUrl = import.meta.env.BASE_URL || '/';
+    const result = await fetchGameDataService([suggestion], baseUrl);
+    
+    if (result.error) {
+      console.error('Error fetching game data:', result.error);
+      return;
+    }
+    
+    // Check if we got updated suggestions with thumbnails
+    const updatedSuggestion = result.updatedSuggestions.find(s => s.id === suggestion.id);
+    if (updatedSuggestion && updatedSuggestion.custom_thumb) {
+      log('Found game data for', suggestion.item, updatedSuggestion);
+      
+      // The thumbnail is already saved to the database in the fetchGameDataService function
+      // The realtime subscription will update the UI
+      log('Custom thumb saved for', suggestion.item);
+    }
+  } catch (err) {
+    console.error('Error in handleSuggestionImageError:', err);
+  }
+};
+
+// Legacy handler for backward compatibility
 const handleImageError = (event: Event, suggestion: any) => {
   const target = event.target as HTMLImageElement;
   // Use a placeholder if image fails
   target.src = getPlaceholderImage(suggestion.item);
+  
+  // Call the new handler
+  handleSuggestionImageError({ suggestionId: suggestion.id, type: 'thumbnail' });
 };
 
 // Get placeholder image for a game

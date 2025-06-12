@@ -1,0 +1,53 @@
+/* Custom toast styles to match brown and gold theme */
+:root {
+  --toastify-color-light: #3c1600;
+  --toastify-color-dark: #3c1600;
+  --toastify-color-info: #3c1600;
+  --toastify-color-success: #3c1600;
+  --toastify-color-warning: #3c1600;
+  --toastify-color-error: #3c1600;
+  
+  --toastify-icon-color-info: #FFD700;
+  --toastify-icon-color-success: #FFD700;
+  --toastify-icon-color-warning: #FF8C00;
+  --toastify-icon-color-error: #FF4500;
+  
+  --toastify-text-color-light: #FFD700;
+  --toastify-text-color-dark: #FFD700;
+  --toastify-text-color-info: #FFD700;
+  --toastify-text-color-success: #FFD700;
+  --toastify-text-color-warning: #FFD700;
+  --toastify-text-color-error: #FFD700;
+  
+  --toastify-color-progress-info: #FFD700;
+  --toastify-color-progress-success: #FFD700;
+  --toastify-color-progress-warning: #FF8C00;
+  --toastify-color-progress-error: #FF4500;
+}
+
+/* Add border to toast containers */
+.Toastify__toast {
+  border: 1px solid;
+}
+
+.Toastify__toast--info {
+  border-color: #FFD700;
+}
+
+.Toastify__toast--success {
+  border-color: #FFD700;
+}
+
+.Toastify__toast--warning {
+  border-color: #FF8C00;
+}
+
+.Toastify__toast--error {
+  border-color: #FF4500;
+}
+
+/* Custom font styling */
+.Toastify__toast-body {
+  font-family: 'Inter', sans-serif;
+  font-weight: 500;
+}

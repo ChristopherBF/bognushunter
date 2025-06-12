@@ -1,7 +1,6 @@
 <template>
   <div class="space-y-6">
     <div class="bg-brown rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4">§</h2>
       
       <!-- Search input -->
       <div class="mb-4">
@@ -118,6 +117,9 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
+import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
+import 'vue3-toastify/dist/index.css';
+import '../../styles/toast.css';
 
 // Props
 const props = defineProps<{
@@ -179,6 +181,7 @@ const handleSearchInput = () => {
   // Set a new timeout to delay the search
   searchTimeout.value = setTimeout(() => {
     resetAndFetchGames();
+    showInfo('Searching for games...');
   }, 500) as unknown as number;
 };
 
@@ -189,6 +192,7 @@ const fetchGames = async () => {
     games.value = [];
     totalItems.value = 0;
     loading.value = false;
+    showInfo('No search term entered');
     return;
   }
   
@@ -232,6 +236,7 @@ const fetchGames = async () => {
     hasNextPage.value = data.pagination?.hasNext || false;
   } catch (error) {
     console.error('Error fetching games:', error);
+    showError('Failed to load games. Please try again.');
     games.value = [];
     totalItems.value = 0;
     hasPrevPage.value = false;
@@ -266,6 +271,7 @@ const prevPage = () => {
 // Suggest an item
 const suggestItem = async (item: string) => {
   if (suggestedItems.value.includes(item)) {
+    showInfo(`"${formatGameName(item)}" is already in your suggestions`);
     return;
   }
   
@@ -291,12 +297,14 @@ const suggestItem = async (item: string) => {
     if (error) throw error;
     
     suggestedItems.value.push(item);
+    showSuccess(`"${formatGameName(item)}" added to your suggestions`);
     console.log('Item suggested successfully with images:', {
       custom_thumb: selectedGame?.custom_thumb || selectedGame?.url_thumb,
       url_background: selectedGame?.url_background
     });
   } catch (error) {
     console.error('Error suggesting item:', error);
+    showError(`Failed to suggest "${formatGameName(item)}". Please try again.`);
   }
 };
 
@@ -316,6 +324,7 @@ const fetchSuggestedItems = async () => {
     suggestedItems.value = data?.map(suggestion => suggestion.item) || [];
   } catch (error) {
     console.error('Error fetching suggested items:', error);
+    showError('Failed to load your suggestions. Please refresh the page.');
   }
 };
 
