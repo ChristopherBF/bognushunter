@@ -13,6 +13,7 @@ export interface HuntItem {
   bonus: boolean;
   super_bonus: boolean;
   completed: boolean;
+  active: boolean; // True if active, false if inactive
   custom_thumb?: string | null;
   url_background?: string | null;
   item?: string; // This is populated after joining with suggestions
@@ -33,7 +34,7 @@ export async function fetchHuntList(eventId: string): Promise<{
     // First fetch hunt items without joins
     const { data: huntItemsData, error: huntItemsError } = await supabase
       .from('hunt_items')
-      .select('*')
+      .select('*') // 'active' will be included if present in the table
       .eq('event_id', eventId);
 
     if (huntItemsError) {
@@ -118,6 +119,7 @@ export async function addToHunt(
         bonus: false,
         super_bonus: false,
         completed: false,
+        active: true, // New hunt items are active by default
         custom_thumb: suggestion.custom_thumb || null,
         url_background: suggestion.url_background || null
       })
@@ -206,6 +208,7 @@ export async function updateHuntItem(item: HuntItem): Promise<{
     updateData.bonus = item.bonus;
     updateData.super_bonus = item.super_bonus;
     updateData.completed = item.completed;
+    updateData.active = item.active; // Allow toggling active status
     
     // Only include these if they're not null/undefined
     if (item.custom_thumb) updateData.custom_thumb = item.custom_thumb;

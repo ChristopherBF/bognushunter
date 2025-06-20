@@ -12,6 +12,7 @@ export interface Event {
   current_balance?: number;
   suggestions_count?: number;
   hunt_items_count?: number;
+  open: boolean; // True if event is open, false if closed
 }
 
 /**
@@ -29,7 +30,7 @@ export async function fetchEvents(userId: string): Promise<{
     // Fetch events created by this user
     const { data, error } = await supabase
       .from('suggestion_events')
-      .select('*')
+      .select('*') // 'open' will be included if present in the table
       .eq('created_by', userId)
       .order('date', { ascending: false });
       
@@ -87,7 +88,8 @@ export async function createEvent(name: string, userId: string, startingBalance:
         created_by: userId,
         date: new Date().toISOString(),
         starting_balance: startingBalance,
-        current_balance: startingBalance // Initialize current balance to starting balance
+        current_balance: startingBalance, // Initialize current balance to starting balance
+        open: true // New events are open by default
       })
       .select()
       .single();
@@ -119,7 +121,7 @@ export async function getEvent(eventId: string): Promise<{
     
     const { data, error } = await supabase
       .from('suggestion_events')
-      .select('*')
+      .select('*') // 'open' included
       .eq('id', eventId)
       .single();
       
@@ -178,6 +180,30 @@ export async function updateStartingBalance(
  * @param currentBalance The new current balance value
  * @returns Success status and any error
  */
+/**
+ * Close a suggestion event (set open = false)
+ * @param eventId The ID of the event to close
+ * @returns Success status and any error
+ */
+export async function closeEvent(eventId: string): Promise<{ success: boolean, error: Error | null }> {
+  try {
+    const supabase = getSupabaseClient();
+    const { error } = await supabase
+      .from('suggestion_events')
+      .update({ open: false })
+      .eq('id', eventId);
+    if (error) {
+      return { success: false, error };
+    }
+    return { success: true, error: null };
+  } catch (e) {
+    return {
+      success: false,
+      error: e instanceof Error ? e : new Error('Unknown error closing event')
+    };
+  }
+}
+
 export async function updateCurrentBalance(
   eventId: string,
   currentBalance: number | null

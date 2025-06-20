@@ -2,7 +2,15 @@
   <div class="p-4 border border-streamer-text-secondary/40 rounded-lg hover:bg-orange-900/40 cursor-pointer shadow">
     <div class="flex justify-between items-center">
       <div class="flex flex-col">
-        <span class="text-gold font-medium">{{ formatDate(event.date) }} {{ event.name || '' }}</span>
+        <div class="flex items-center gap-2">
+          <span class="text-gold font-medium">{{ formatDate(event.date) }} {{ event.name || '' }}</span>
+          <span
+            class="px-2 py-0.5 rounded-full text-xs font-semibold"
+            :class="event.open ? 'bg-green-700 text-green-200' : 'bg-gray-700 text-gray-300'"
+          >
+            {{ event.open ? 'Open' : 'Closed' }}
+          </span>
+        </div>
         <div class="flex items-center gap-4 mt-1">
           <span class="text-sm text-streamer-text-secondary">Starting Balance: {{ event.starting_balance }}$</span>
           <span class="text-sm text-streamer-text-secondary">Current Balance: {{ event.current_balance }}$</span>
@@ -20,7 +28,19 @@
           </span>
         </div>
       </div>
-      <div class="flex space-x-2">
+      <div class="flex space-x-2 items-center">
+        <button
+          v-if="event.open"
+          @click.stop="$emit('close-event', event.id)"
+          class="px-2 py-1 bg-red-700 text-white text-xs rounded hover:bg-red-800 shadow transition-colors duration-150 flex items-center gap-1"
+          :disabled="!event.open"
+          title="Close Event"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+          Close
+        </button>
         <button 
           @click="$emit('view-suggestions', event.id)"
           class="px-3 py-1 bg-orange-700 text-gold text-sm rounded hover:bg-orange-800 hover:text-gold shadow transition-colors duration-150 flex items-center gap-1"

@@ -31,7 +31,8 @@ npm install
        id uuid default uuid_generate_v4() primary key,
        date timestamp with time zone,
        created_by uuid references auth.users(id),
-       created_at timestamp with time zone default timezone('utc'::text, now()) not null
+       created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+       open boolean default true
      );
 
      create table suggestions (
@@ -51,7 +52,8 @@ npm install
        bonus boolean default false,
        super_bonus boolean default false,
        completed boolean default false,
-       created_at timestamp with time zone default timezone('utc'::text, now()) not null
+       created_at timestamp with time zone default timezone('utc'::text, now()) not null,
+       active boolean default true
      );
      ```
 

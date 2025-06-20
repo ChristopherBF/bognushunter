@@ -14,6 +14,7 @@ export interface Suggestion {
   count?: number;
   url_thumb?: string | null;
   provider?: string;
+  open?: boolean; // True if suggestion is open, false if closed (for event-level status)
 }
 
 /**

@@ -1,5 +1,5 @@
 <template>
-  <div class="p-3 border rounded-lg hover:bg-orange-900/40">
+  <div :class="['p-3 border rounded-lg hover:bg-orange-900/40', huntItem.active ? 'bg-green-900/30 item-active' : 'bg-gray-800/40 item-inactive']">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-3">
         <!-- Game thumbnail -->
@@ -218,3 +218,15 @@ function handleImageError(type: string) {
   });
 }
 </script>
+
+<style scoped>
+.item-active {
+  /* Optionally override or extend Tailwind styles here */
+  /* background-color: #16653422; */
+}
+.item-inactive {
+  /* Optionally override or extend Tailwind styles here */
+  /* background-color: #1f293722; */
+  opacity: 0.7;
+}
+</style>

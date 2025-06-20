@@ -1,5 +1,5 @@
 <template>
-  <div class="p-3 border rounded-lg hover:bg-orange-900/40">
+  <div :class="['p-3 border rounded-lg hover:bg-orange-900/40', huntItem.active ? 'bg-green-900/30 item-active' : 'bg-gray-800/40 item-inactive']">
     <div class="flex items-center justify-between">
       <div class="flex items-center gap-2">
         <GameThumbnail
@@ -46,3 +46,12 @@ const formattedItemName = computed(() => {
   return formatItemName(props.huntItem.item);
 });
 </script>
+
+<style scoped>
+.item-active {
+  /* Optionally override or extend Tailwind styles here */
+}
+.item-inactive {
+  opacity: 0.7;
+}
+</style>

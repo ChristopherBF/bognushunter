@@ -14,15 +14,32 @@
         </button>
       </div>
       <div class="space-y-4">
+        <!-- Open Events -->
         <EventListItem 
-          v-for="event in events" 
+          v-for="event in events.filter(e => e.open)" 
           :key="event.id" 
           :event="event"
           @view-suggestions="viewSuggestions"
           @view-summary="viewSummary"
           @view-hunt-list="viewHuntList"
           @share-link="shareSuggestionLink"
+          @close-event="handleCloseEvent"
         />
+        <!-- Closed Events -->
+        <template v-if="events.some(e => !e.open)">
+          <hr class="my-6 border-orange/40">
+          <h3 class="text-lg text-gold mb-2">Closed Hunts</h3>
+          <EventListItem 
+            v-for="event in events.filter(e => !e.open)" 
+            :key="event.id" 
+            :event="event"
+            @view-suggestions="viewSuggestions"
+            @view-summary="viewSummary"
+            @view-hunt-list="viewHuntList"
+            @share-link="shareSuggestionLink"
+            @close-event="handleCloseEvent"
+          />
+        </template>
         <!-- Notification for copied link -->
         <div v-if="copiedEventId" class="mt-2 text-sm text-streamer-green-accent flex items-center">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -75,7 +92,7 @@ import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
 import { subscribeSuggestions, unsubscribeAll, type SuggestionPayload } from '../../lib/realtime';
 import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
-import { createEvent as createEventService, fetchEvents as fetchEventsService } from '../../services/eventService';
+import { createEvent as createEventService, fetchEvents as fetchEventsService, closeEvent as closeEventService } from '../../services/eventService';
 import EventListItem from './EventListItem.vue';
 import 'vue3-toastify/dist/index.css';
 import '../../styles/toast.css';
@@ -103,6 +120,34 @@ const copiedEventId = ref<string | null>(null);
 // Modal state
 const showCreateEventModal = ref(false);
 const startingBalance = ref(1000); // Default starting balance
+
+// Handle closing an event
+const handleCloseEvent = async (eventId: string) => {
+  // AJAX close: call service, update UI, show toast
+  const idx = events.value.findIndex(e => e.id === eventId);
+  if (idx === -1) return;
+  const prevOpen = events.value[idx].open;
+  // Optimistically close in UI
+  events.value[idx].open = false;
+  const { success, error } = await closeEventService(eventId);
+  if (success) {
+    showSuccess('Event closed!');
+  } else {
+    // Revert if error
+    events.value[idx].open = prevOpen;
+    showError(error?.message || 'Failed to close event');
+    if (error) {
+      showError(`Failed to close event: ${error.message}`);
+      return;
+    }
+    if (success) {
+      events.value[idx].open = false;
+      showSuccess('Event closed successfully');
+    }
+  } catch (err) {
+    showError('Unexpected error closing event');
+  }
+};
 
 // Handle the create event
 const handleCreateEvent = async (e?: Event) => {
