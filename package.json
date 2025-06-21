@@ -27,6 +27,8 @@
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.4",
+    "@vitest/coverage-v8": "^3.2.4",
+    "@vitest/ui": "^3.2.4",
     "@vue/test-utils": "^2.4.6",
     "astro": "^5.8.1",
     "jsdom": "^26.1.0",

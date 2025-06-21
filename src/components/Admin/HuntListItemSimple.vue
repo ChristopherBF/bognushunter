@@ -26,15 +26,11 @@ import GameThumbnail from '../UI/GameThumbnail.vue';
 import ActionButton from '../UI/ActionButton.vue';
 
 // Define hunt item type
-interface HuntItem {
-  id: string;
-  item: string;
-  custom_thumb?: string;
-}
+import type { HuntItemPreview } from '../../types/hunt';
 
 const props = defineProps({
   huntItem: {
-    type: Object as () => HuntItem,
+    type: Object as () => HuntItemPreview,
     required: true
   }
 });

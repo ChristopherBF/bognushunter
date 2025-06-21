@@ -118,24 +118,11 @@ import GameThumbnail from '../UI/GameThumbnail.vue';
 import ActionButton from '../UI/ActionButton.vue';
 
 // Define hunt item type
-interface HuntItem {
-  id: string;
-  event_id: string;
-  suggestion_id: string;
-  item: string;
-  wager: number;
-  result: number;
-  bonus: boolean;
-  super_bonus: boolean;
-  completed: boolean;
-  custom_thumb?: string;
-  url_background?: string;
-  current_balance?: number;
-}
+import type { HuntItemPreview } from '../../types/hunt';
 
 const props = defineProps({
   huntItem: {
-    type: Object as () => HuntItem,
+    type: Object as () => HuntItemPreview,
     required: true
   }
 });
@@ -143,7 +130,7 @@ const props = defineProps({
 const emit = defineEmits(['update', 'remove', 'image-error']);
 
 // Create a local copy of the hunt item to track changes
-const localItem = ref<HuntItem>({ ...props.huntItem });
+const localItem = ref<HuntItemPreview>({ ...props.huntItem });
 
 // Modal state
 const showBalanceModal = ref(false);
@@ -154,7 +141,7 @@ const previousBonusState = ref(false);
 // Watch for changes in the props and update local state
 watch(() => props.huntItem, (newItem) => {
   localItem.value = { ...newItem };
-  currentBalance.value = newItem.current_balance || 0;
+  // currentBalance not needed for HuntItemPreview
 }, { deep: true });
 
 // Format the item name for display
@@ -221,12 +208,9 @@ function handleImageError(type: string) {
 
 <style scoped>
 .item-active {
-  /* Optionally override or extend Tailwind styles here */
-  /* background-color: #16653422; */
+  opacity: 1;
 }
 .item-inactive {
-  /* Optionally override or extend Tailwind styles here */
-  /* background-color: #1f293722; */
   opacity: 0.7;
 }
 </style>

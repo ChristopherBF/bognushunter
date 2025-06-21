@@ -144,8 +144,6 @@ const handleCloseEvent = async (eventId: string) => {
       events.value[idx].open = false;
       showSuccess('Event closed successfully');
     }
-  } catch (err) {
-    showError('Unexpected error closing event');
   }
 };
 

@@ -4,20 +4,7 @@ import type { Suggestion } from './suggestionService';
 /**
  * Service for handling hunt item-related operations with Supabase
  */
-export interface HuntItem {
-  id: string;
-  event_id: string;
-  suggestion_id: string;
-  wager: number;
-  result: number;
-  bonus: boolean;
-  super_bonus: boolean;
-  completed: boolean;
-  active: boolean; // True if active, false if inactive
-  custom_thumb?: string | null;
-  url_background?: string | null;
-  item?: string; // This is populated after joining with suggestions
-}
+import type { HuntItem } from '../types/hunt';
 
 /**
  * Fetch the hunt list for a specific event

@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { closeEvent, fetchEvents, createEvent } from '../src/services/eventService';
 
 // Mock Supabase client and dependencies for service tests
@@ -44,8 +44,10 @@ describe('eventService', () => {
 
 // Add more tests for UI if using Vitest + @vue/test-utils
 // Example: HuntListItem.vue color coding
+// NOTE: Uses Partial<HuntItemPreview> for minimal test props
 import { mount } from '@vue/test-utils';
 import HuntListItem from '../src/components/Admin/HuntListItem.vue';
+import type { HuntItemPreview } from '../src/types/hunt';
 
 describe('HuntListItem.vue', () => {
   it('applies item-active class for active hunt item', () => {
