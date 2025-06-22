@@ -83,11 +83,12 @@ import { ref, onMounted, computed } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
 import { formatItemName } from '../../lib/utils';
 import { showSuccess, showError, showInfo } from '../../lib/toast';
-import { fetchHuntList as fetchHuntListService, updateHuntItem as updateHuntItemService, removeFromHunt as removeFromHuntService, type HuntItem } from '../../services/huntItemService';
+import { fetchHuntList as fetchHuntListService, updateHuntItem as updateHuntItemService, removeFromHunt as removeFromHuntService } from '../../services/huntItemService';
 import { getEvent, updateStartingBalance as updateStartingBalanceService, updateCurrentBalance as updateCurrentBalanceService } from '../../services/eventService';
 
 // Import the HuntListItem component
 import HuntListItem from './HuntListItem.vue';
+import type { HuntItem } from '../../types/hunt';
 
 // Debug flag
 const DEBUG = true;
@@ -200,7 +201,8 @@ const updateHuntItem = async (item: any) => {
       completed: item.completed,
       custom_thumb: item.custom_thumb,
       url_background: item.url_background,
-      item: item.item
+      item: item.item,
+      active: item.active
     };
     
     // Log the object we're sending to the service
