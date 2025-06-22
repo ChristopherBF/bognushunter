@@ -38,28 +38,6 @@ export const getSupabaseClient = (cookies?: AstroCookies) => {
   return supabase;
 };
 
-// Your interfaces (SuggestionEvent, Suggestion, HuntItem) remain the same below this line
-export interface SuggestionEvent {
-  id: string;
-  date: string;
-  created_at: string;
-}
-
-export interface Suggestion {
-  id: string;
-  event_id: string;
-  item: string;
-  count: number;
-  created_at: string;
-}
-
-export interface HuntItem {
-  id: string;
-  suggestion_id: string;
-  wager: number;
-  result: number;
-  bonus: boolean;
-  super_bonus: boolean;
-  completed: boolean;
-  created_at: string;
-}
+import type { HuntItem } from '../types/hunt';
+import type { Suggestion } from '../types/suggestion';
+import type { Event as SuggestionEvent } from '../types/event';

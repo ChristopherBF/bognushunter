@@ -1,42 +1,6 @@
 import { getSupabaseClient } from './supabase';
 
-// Type definitions for subscription payloads
-export interface SuggestionPayload {
-  eventType: 'INSERT' | 'UPDATE' | 'DELETE';
-  new: {
-    id?: string;
-    event_id?: string;
-    item?: string;
-    count?: number;
-    created_at?: string;
-    custom_thumb?: string;
-    url_thumb?: string;
-    url_background?: string;
-  };
-  old?: {
-    id?: string;
-    event_id?: string;
-    item?: string;
-  };
-}
-
-export interface HuntItemPayload {
-  new: {
-    id?: string;
-    event_id?: string;
-    suggestion_id?: string;
-    item?: string;
-    wager?: number;
-    result?: number;
-    bonus?: boolean;
-    super_bonus?: boolean;
-    completed?: boolean;
-    created_at?: string;
-  };
-}
-
-// Type for subscription callbacks
-export type SubscriptionCallback<T> = (payload: T) => void;
+import type { HuntItemPayload, SuggestionPayload, SubscriptionCallback } from '../types/payloads';
 
 // Store active subscriptions
 const activeSubscriptions: Record<string, any> = {};

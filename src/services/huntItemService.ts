@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../lib/supabase';
-import type { Suggestion } from './suggestionService';
+import type { Suggestion } from '../types/suggestion';
 
 /**
  * Service for handling hunt item-related operations with Supabase

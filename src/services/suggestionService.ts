@@ -1,21 +1,9 @@
 import { getSupabaseClient } from '../lib/supabase';
+import type { Suggestion } from '../types/suggestion';
 
 /**
  * Service for handling suggestion-related operations with Supabase
  */
-export interface Suggestion {
-  id: string;
-  item: string;
-  user_id: string;
-  created_at: string;
-  event_id: string;
-  custom_thumb?: string | null;
-  url_background?: string | null;
-  count?: number;
-  url_thumb?: string | null;
-  provider?: string;
-  open?: boolean; // True if suggestion is open, false if closed (for event-level status)
-}
 
 /**
  * Fetch all suggestions for a specific event
@@ -160,7 +148,9 @@ export async function fetchGameDataForSuggestions(
     const updatedSuggestions = [...suggestions];
     
     // Try to fetch game data for each suggestion that doesn't already have a thumbnail
-    for (const suggestion of updatedSuggestions) {
+    // Locally extend Suggestion to allow 'provider' property for this context
+    type SuggestionWithProvider = Suggestion & { provider?: string };
+    for (const suggestion of updatedSuggestions as SuggestionWithProvider[]) {
       // Skip if we already have a thumbnail
       if (suggestion.custom_thumb) {
         continue;

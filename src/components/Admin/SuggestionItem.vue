@@ -23,14 +23,7 @@ import { formatItemName } from '../../lib/utils';
 import GameThumbnail from '../UI/GameThumbnail.vue';
 
 // Define suggestion type
-interface Suggestion {
-    id: string;
-    item: string;
-    count: number;
-    custom_thumb?: string;
-    url_thumb?: string;
-    url_background?: string;
-}
+import type { Suggestion } from '../../types/suggestion';
 
 const props = defineProps({
     suggestion: {
