@@ -207,17 +207,28 @@ export async function fetchGameDataForSuggestions(
 export async function addSuggestion(
   eventId: string,
   item: string,
-  userId: string
+  userId: string,
+  custom_thumb?: string,
+  url_background?: string
 ): Promise<{ suggestion: Suggestion | null, error: Error | null }> {
   try {
     const supabase = getSupabaseClient();
+
+    console.log(
+      'Adding suggestion:',
+      eventId,
+      item,
+      userId
+    )
     
     const { data, error } = await supabase
       .from('suggestions')
       .insert({
         event_id: eventId,
         item,
-        user_id: userId
+        user_id: userId,
+        custom_thumb: custom_thumb || null,
+        url_background: url_background || null
       })
       .select()
       .single();

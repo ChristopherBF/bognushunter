@@ -269,7 +269,7 @@ const prevPage = () => {
 };
 
 // Suggest an item
-const suggestItem = async (item: string) => {
+export const suggestItem = async (item: string) => {
   if (suggestedItems.value.includes(item)) {
     showInfo(`"${formatGameName(item)}" is already in your suggestions`);
     return;

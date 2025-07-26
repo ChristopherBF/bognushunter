@@ -20,6 +20,38 @@ if (code) {
   try {
     // This will automatically set the cookies for the session
     await supabase.auth.exchangeCodeForSession(code);
+
+    // After exchanging, get the user from the session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      console.error('Error getting user after session exchange:', userError);
+    } else if (user) {
+      // Check if user exists in the app's users table
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: No rows found
+        console.error('Error checking user existence in users table:', fetchError);
+      }
+      if (!existingUser) {
+        // Insert user into users table
+        const { error: insertError } = await supabase.from('users').insert([
+          {
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+            avatar_url: user.user_metadata?.avatar_url || null
+          }
+        ]);
+        if (insertError) {
+          console.error('Error inserting user into users table:', insertError);
+        } else {
+          console.log('User inserted into users table:', user.id);
+        }
+      }
+    }
   } catch (err) {
     console.error('Error exchanging code for session:', err);
   }

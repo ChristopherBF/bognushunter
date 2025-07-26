@@ -224,3 +224,32 @@ export async function updateCurrentBalance(
     };
   }
 }
+
+/**
+ * Get the ID of the first open event
+ * @returns The ID of the first open event, or null if no open events exist
+ */
+export async function getFirstOpenEventId(): Promise<{ 
+  eventId: string | null, 
+  error: Error | null 
+}> {
+  try {
+    const supabase = getSupabaseClient();
+    
+    const { data, error } = await supabase
+      .from('suggestion_events')
+      .select('id')
+      .limit(1)
+      .single();
+
+      console.log(error)
+
+    
+    return { eventId: data.id, error: null };
+  } catch (e) {
+    return { 
+      eventId: null, 
+      error: e instanceof Error ? e : new Error('Unknown error fetching open event ID') 
+    };
+  }
+}
