@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
-    <div class="bg-brown rounded-lg shadow p-6">
+  <div class="space-y-3">
+    <div class="bg-brown rounded-lg shadow p-3">
       
       <!-- Search input -->
-      <div class="mb-4">
+      <div class="mb-2">
         <div class="relative">
           <input
             style="background-color: #592101"
@@ -11,13 +11,13 @@
             @input="handleSearchInput"
             type="text"
             placeholder="Search for games..."
-            class="w-full px-4 py-2 border rounded-md pr-10"
+            class="w-full px-3 py-1.5 text-sm border rounded-md pr-8"
           />
           <button 
             @click="resetAndFetchGames"
-            class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold hover:text-gray-700 bg-orange"
+            class="absolute right-1.5 top-1/2 transform -translate-y-1/2 text-gold hover:text-gray-700 bg-orange p-1 rounded"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
             </svg>
           </button>
@@ -25,89 +25,89 @@
       </div>
       
       <!-- Loading indicator -->
-      <div v-if="loading" class="flex justify-center my-8">
-        <div class="w-12 h-12 border-4 border-orange border-t-transparent rounded-full animate-spin"></div>
+      <div v-if="loading" class="flex justify-center my-4">
+        <div class="w-6 h-6 border-2 border-orange border-t-transparent rounded-full animate-spin"></div>
       </div>
       
-      <!-- Games grid -->
-      <div v-else-if="!loading && games.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <!-- Games list -->
+      <div v-else-if="!loading && games.length > 0" class="space-y-1">
         <div
           v-for="game in games"
           :key="game._id || game.game_id"
-          class="flex flex-col p-4 border rounded-lg hover:bg-orange-900/40 cursor-pointer transition-all duration-200 hover:shadow-md"
+          class="flex items-center p-2 border rounded hover:bg-orange-900/40 cursor-pointer transition-all duration-200"
           @click="suggestItem(game.name)"
         >
-          <!-- Game thumbnail with background -->
-          <div class="relative w-full h-40 mb-3 overflow-hidden rounded-md">
+          <!-- Game thumbnail -->
+          <div class="relative w-12 h-12 mr-3 overflow-hidden rounded flex-shrink-0">
             <img 
               :src="game.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/') || game.url_thumb" 
               :alt="game.name" 
               class="w-full h-full object-cover"
               @error="handleImageError($event, game)"
             />
-            <div class="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent"></div>
           </div>
           
           <!-- Game details -->
-          <div class="flex flex-col flex-grow">
-            <div class="flex justify-between items-start mb-2">
-              <span class="font-medium text-gold">{{ formatGameName(game.name) }}</span>
-              <span v-if="game.rtp" class="text-xs px-2 py-1 bg-green-100 text-green-800 rounded-full">RTP: {{ game.rtp }}%</span>
+          <div class="flex-grow min-w-0">
+            <div class="flex items-center justify-between">
+              <span class="font-medium text-gold text-sm truncate">{{ formatGameName(game.name) }}</span>
+              <span v-if="game.rtp" class="text-xs px-1.5 py-0.5 bg-green-100 text-green-800 rounded ml-2 flex-shrink-0">{{ game.rtp }}%</span>
             </div>
             
-            <div class="text-gold text-sm mb-2">{{ game.provider }}</div>
+            <div class="text-gold text-xs opacity-75">{{ game.provider }}</div>
             
             <!-- Features tags -->
-            <div v-if="game.features && game.features.length" class="flex flex-wrap gap-1 mt-auto">
+            <div v-if="game.features && game.features.length" class="flex flex-wrap gap-1 mt-1">
               <span 
-                v-for="feature in game.features" 
+                v-for="feature in game.features.slice(0, 3)" 
                 :key="feature" 
-                class="text-xs px-2 py-0.5 bg-blue-100 text-blue-800 rounded-full"
+                class="text-xs px-1.5 py-0.5 bg-blue-100 text-blue-800 rounded"
               >
                 {{ formatFeature(feature) }}
               </span>
+              <span v-if="game.features.length > 3" class="text-xs text-gold opacity-50">+{{ game.features.length - 3 }}</span>
             </div>
           </div>
         </div>
       </div>
       
       <!-- No results message -->
-      <div v-else-if="!loading && games.length === 0 && searchTerm.trim() !== ''" class="text-center py-8">
-        <p class="text-gold">No games found. Try a different search term.</p>
+      <div v-else-if="!loading && games.length === 0 && searchTerm.trim() !== ''" class="text-center py-4">
+        <p class="text-gold text-sm">No games found. Try a different search term.</p>
       </div>
       
       <!-- Pagination controls -->
-      <div class="mt-6 flex justify-between items-center">
+      <div class="mt-3 flex justify-between items-center text-sm">
         <button 
           @click="prevPage" 
           :disabled="currentPage === 1 || !hasPrevPage"
-          class="px-4 py-2 border rounded-md bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-3 py-1.5 border rounded bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
           Previous
         </button>
         
-        <span>Page {{ currentPage }}</span>
+        <span class="text-gold">Page {{ currentPage }}</span>
         
         <button 
           @click="nextPage" 
           :disabled="!hasNextPage"
-          class="px-4 py-2 border rounded-md bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed"
+          class="px-3 py-1.5 border rounded bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
         >
           Next
         </button>
       </div>
     </div>
 
-    <div class="rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4 text-orange">Your Suggestions</h2>
-      <div class="space-y-4">
+    <div class="rounded-lg shadow p-3">
+      <h2 class="text-lg font-semibold mb-2 text-orange">Your Suggestions</h2>
+      <div class="space-y-1">
         <div
           v-for="item in suggestedItems"
           :key="item"
-          class="flex items-center justify-between p-3 border rounded-lg hover:bg-orange"
+          class="flex items-center justify-between p-2 border rounded hover:bg-orange text-sm"
         >
-          <span>{{ formatGameName(item) }}</span>
-          <span class="text-green-600">Suggested</span>
+          <span class="truncate">{{ formatGameName(item) }}</span>
+          <span class="text-green-600 text-xs ml-2 flex-shrink-0">✓</span>
         </div>
       </div>
     </div>
@@ -117,6 +117,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
+import { addSuggestion } from '../../services/suggestionService';
 import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
 import 'vue3-toastify/dist/index.css';
 import '../../styles/toast.css';
@@ -269,38 +270,40 @@ const prevPage = () => {
 };
 
 // Suggest an item
-export const suggestItem = async (item: string) => {
+const suggestItem = async (item: string) => {
   if (suggestedItems.value.includes(item)) {
-    showInfo(`"${formatGameName(item)}" is already in your suggestions`);
+    // Silently ignore - visual feedback is enough (checkmark in list)
     return;
   }
   
   // Find the game data for the selected item
   const selectedGame = games.value.find(game => game.name === item);
   
-  const supabase = getSupabaseClient();
-  
   try {
     console.log('Suggesting item with game data:', selectedGame);
     
-    // Create the suggestion with thumbnail and background URLs
-    const { error } = await supabase.from('suggestions').insert({
-      event_id: props.eventId,
-      user_id: props.userId,
-      item: item,
-      created_at: new Date().toISOString(),
-      // Add thumbnail and background URLs
-      custom_thumb: selectedGame?.custom_thumb || selectedGame?.url_thumb || null,
-      url_background: selectedGame?.url_background || null
-    });
+    // Use the addSuggestion service which will automatically handle event selection
+    const { suggestion, error } = await addSuggestion(
+      props.eventId, // This can be null/invalid, service will handle it
+      item,
+      props.userId,
+      selectedGame?.custom_thumb || selectedGame?.url_thumb || null,
+      selectedGame?.url_background || null
+    );
     
-    if (error) throw error;
+    if (error) {
+      console.error('Error suggesting item:', error);
+      // Only show error toasts for actual failures
+      showError(`Failed to suggest "${formatGameName(item)}": ${error.message}`);
+      return;
+    }
     
     suggestedItems.value.push(item);
-    showSuccess(`"${formatGameName(item)}" added to your suggestions`);
+    // Removed success toast - visual feedback (checkmark) is sufficient
     console.log('Item suggested successfully with images:', {
       custom_thumb: selectedGame?.custom_thumb || selectedGame?.url_thumb,
-      url_background: selectedGame?.url_background
+      url_background: selectedGame?.url_background,
+      suggestion
     });
   } catch (error) {
     console.error('Error suggesting item:', error);
@@ -324,7 +327,8 @@ const fetchSuggestedItems = async () => {
     suggestedItems.value = data?.map(suggestion => suggestion.item) || [];
   } catch (error) {
     console.error('Error fetching suggested items:', error);
-    showError('Failed to load your suggestions. Please refresh the page.');
+    // Only show error if it's a critical failure that affects functionality
+    // Most users won't need to see this unless it's persistent
   }
 };
 

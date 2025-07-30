@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../lib/supabase';
+import { getFirstOpenEventId } from './eventService';
 import type { Suggestion } from '../types/suggestion';
 
 /**
@@ -199,13 +200,13 @@ export async function fetchGameDataForSuggestions(
 
 /**
  * Add a new suggestion
- * @param eventId The ID of the event to add the suggestion to
+ * @param eventId The ID of the event to add the suggestion to (optional - will use first open event if not provided or invalid)
  * @param item The suggestion item text
  * @param userId The ID of the user adding the suggestion
  * @returns The added suggestion and any error
  */
 export async function addSuggestion(
-  eventId: string,
+  eventId: string | null,
   item: string,
   userId: string,
   custom_thumb?: string,
@@ -221,10 +222,51 @@ export async function addSuggestion(
       userId
     )
     
+    let finalEventId = eventId;
+    
+    // If no eventId provided or if the eventId doesn't exist, use the first open event
+    if (!eventId) {
+      console.log('No eventId provided, fetching first open event');
+      const { eventId: firstOpenEventId, error: eventError } = await getFirstOpenEventId();
+      
+      if (eventError || !firstOpenEventId) {
+        return { 
+          suggestion: null, 
+          error: new Error('No open events available. Please create an event first.') 
+        };
+      }
+      
+      finalEventId = firstOpenEventId;
+      console.log('Using first open event:', finalEventId);
+    } else {
+      // Verify the provided eventId exists and is open
+      const { data: eventExists, error: checkError } = await supabase
+        .from('suggestion_events')
+        .select('id, open')
+        .eq('id', eventId)
+        .eq('open', true)
+        .maybeSingle(); // Use maybeSingle() to avoid error when no rows found
+        
+      if (checkError || !eventExists) {
+        console.log('Provided eventId does not exist or is closed, fetching first open event');
+        const { eventId: firstOpenEventId, error: eventError } = await getFirstOpenEventId();
+        
+        if (eventError || !firstOpenEventId) {
+          return { 
+            suggestion: null, 
+            error: new Error('No open events available. Please create an event first.') 
+          };
+        }
+        
+        finalEventId = firstOpenEventId;
+        console.log('Using first open event instead:', finalEventId);
+      }
+    }
+    
     const { data, error } = await supabase
       .from('suggestions')
       .insert({
-        event_id: eventId,
+        event_id: finalEventId,
         item,
         user_id: userId,
         custom_thumb: custom_thumb || null,

@@ -1,22 +1,22 @@
 <template>
-    <div class="space-y-6 bg-brown text-gold">
-        <div class="rounded-lg shadow p-6">
-            <div class="mb-6">
-                <h2 class="text-xl font-semibold text-orange">Bognus suggestions for hunt</h2>
-                <p class="text-sm mt-1">Click on an item to add it to the hunt list</p>
+    <div class="space-y-3 bg-brown text-gold">
+        <div class="rounded-lg shadow p-3">
+            <div class="mb-3">
+                <h2 class="text-lg font-semibold text-orange">Bognus suggestions for hunt</h2>
+                <p class="text-xs mt-1 opacity-75">Click on an item to add it to the hunt list</p>
             </div>
 
-            <!-- Grid layout for suggestions -->
-            <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <!-- Compact grid layout for suggestions -->
+            <div class="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-2">
                 <SuggestionItem v-for="suggestion in suggestions" :key="suggestion.id" :suggestion="suggestion"
                     :recently-added="recentlyAddedSuggestions.includes(suggestion.item)" @add-to-hunt="addToHunt"
                     @image-error="handleSuggestionImageError" />
             </div>
         </div>
 
-        <div class="rounded-lg shadow p-6">
-            <h2 class="text-xl font-semibold mb-4 text-orange">Hunt List</h2>
-            <div class="space-y-4">
+        <div class="rounded-lg shadow p-3">
+            <h2 class="text-lg font-semibold mb-2 text-orange">Hunt List</h2>
+            <div class="space-y-2">
                 <HuntListItemSimple v-for="huntItem in huntList" :key="huntItem.id" :hunt-item="huntItem"
                     @remove="removeFromHunt" />
             </div>
@@ -27,7 +27,8 @@
 <script setup lang="ts">
 import { onMounted, onUnmounted, ref } from 'vue';
 import 'vue3-toastify/dist/index.css';
-import { subscribeHuntItems, subscribeSuggestions, type HuntItemPayload, type SuggestionPayload } from '../../lib/realtime';
+import { subscribeHuntItems, subscribeSuggestions } from '../../lib/realtime';
+import type { HuntItemPayload, SuggestionPayload } from '../../types/payloads';
 import { getSupabaseClient } from '../../lib/supabase';
 import { showError, showInfo, showSuccess, showWarning } from '../../lib/toast';
 import { formatItemName } from '../../lib/utils';

@@ -1,23 +1,23 @@
 <template>
-    <div class="space-y-6">
-        <div class="bg-brown border-2 border-orange rounded-xl shadow-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-display mb-1 flex-grow text-gold">Bognus Hunts</h2>
+    <div class="space-y-3">
+        <div class="bg-brown border-2 border-orange rounded-lg shadow-lg p-3">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-lg font-display mb-1 flex-grow text-gold">Bognus Hunts</h2>
                 <!-- Using a button with ref for direct access -->
                 <button ref="createEventButtonRef" type="button" @click="showCreateEventModal = true"
-                    class="px-6 py-3 font-display bg-orange-700 text-gold rounded shadow-md hover:bg-orange-800 transform hover:scale-105 transition-transform">
+                    class="px-3 py-1.5 text-sm font-display bg-orange-700 text-gold rounded shadow-md hover:bg-orange-800 transition-colors">
                     Create Hunt
                 </button>
             </div>
-            <div class="space-y-4">
+            <div class="space-y-2">
                 <!-- Open Events -->
                 <EventListItem v-for="event in events.filter(e => e.open)" :key="event.id" :event="event"
                     @view-suggestions="viewSuggestions" @view-summary="viewSummary" @view-hunt-list="viewHuntList"
                     @share-link="shareSuggestionLink" @close-event="handleCloseEvent" />
                 <!-- Closed Events -->
                 <template v-if="events.some(e => !e.open)">
-                    <hr class="my-6 border-orange/40">
-                    <h3 class="text-lg text-gold mb-2">Closed Hunts</h3>
+                    <hr class="my-3 border-orange/40">
+                    <h3 class="text-base text-gold mb-1">Closed Hunts</h3>
                     <EventListItem v-for="event in events.filter(e => !e.open)" :key="event.id" :event="event"
                         @view-suggestions="viewSuggestions" @view-summary="viewSummary" @view-hunt-list="viewHuntList"
                         @share-link="shareSuggestionLink" @close-event="handleCloseEvent" />
@@ -36,23 +36,23 @@
 
     <!-- Create Event Modal -->
     <div v-if="showCreateEventModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-brown-dark border-2 border-orange rounded-xl shadow-lg p-6 w-96 max-w-md">
-            <h3 class="text-xl font-display text-gold mb-4">Create New Hunt</h3>
+        <div class="bg-brown-dark border-2 border-orange rounded-lg shadow-lg p-4 w-80 max-w-sm">
+            <h3 class="text-lg font-display text-gold mb-3">Create New Hunt</h3>
 
-            <div class="mb-4">
+            <div class="mb-3">
                 <label for="startingBalance" class="block text-sm font-medium text-gold mb-1">Starting Balance</label>
                 <input id="startingBalance" v-model="startingBalance" type="number" min="0" step="1"
-                    class="w-full px-3 py-2 border border-orange rounded bg-brown text-gold focus:outline-none focus:ring-2 focus:ring-orange"
+                    class="w-full px-2 py-1.5 text-sm border border-orange rounded bg-brown text-gold focus:outline-none focus:ring-1 focus:ring-orange"
                     placeholder="Enter starting balance" />
             </div>
 
-            <div class="flex justify-end space-x-3 mt-6">
+            <div class="flex justify-end space-x-2 mt-4">
                 <button @click="showCreateEventModal = false"
-                    class="px-4 py-2 bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition-colors">
+                    class="px-3 py-1.5 text-sm bg-gray-700 text-gray-200 rounded hover:bg-gray-600 transition-colors">
                     Cancel
                 </button>
                 <button @click="handleCreateEvent()"
-                    class="px-4 py-2 bg-orange-700 text-gold rounded hover:bg-orange-600 transition-colors">
+                    class="px-3 py-1.5 text-sm bg-orange-700 text-gold rounded hover:bg-orange-600 transition-colors">
                     Create Hunt
                 </button>
             </div>
@@ -63,12 +63,13 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, nextTick } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
-import { subscribeSuggestions, unsubscribeAll, type SuggestionPayload } from '../../lib/realtime';
+import { subscribeSuggestions, unsubscribeAll } from '../../lib/realtime';
 import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
 import { createEvent as createEventService, fetchEvents as fetchEventsService, closeEvent as closeEventService } from '../../services/eventService';
 import EventListItem from './EventListItem.vue';
 import 'vue3-toastify/dist/index.css';
 import '../../styles/toast.css';
+import type { SuggestionPayload } from '../../types/payloads';
 
 // Debug flag
 const DEBUG = true;
@@ -96,27 +97,34 @@ const startingBalance = ref(1000); // Default starting balance
 
 // Handle closing an event
 const handleCloseEvent = async (eventId: string) => {
-    // AJAX close: call service, update UI, show toast
+    log('Closing event:', eventId);
+    
     const idx = events.value.findIndex(e => e.id === eventId);
-    if (idx === -1) return;
+    if (idx === -1) {
+        log('Event not found in local events array');
+        return;
+    }
+    
     const prevOpen = events.value[idx].open;
-    // Optimistically close in UI
-    events.value[idx].open = false;
-    const { success, error } = await closeEventService(eventId);
-    if (success) {
-        showSuccess('Event closed!');
-    } else {
-        // Revert if error
-        events.value[idx].open = prevOpen;
-        showError(error?.message || 'Failed to close event');
-        if (error) {
-            showError(`Failed to close event: ${error.message}`);
-            return;
-        }
+    log('Event current open status:', prevOpen);
+    
+    try {
+        // Call the service to close the event in the database
+        const { success, error } = await closeEventService(eventId);
+        
         if (success) {
+            // Update the local state to reflect the closed event
             events.value[idx].open = false;
-            showSuccess('Event closed successfully');
+            log('Event closed successfully in database and UI updated');
+            showSuccess('Hunt closed successfully!');
+        } else {
+            // Handle error case
+            log('Failed to close event:', error);
+            showError(error?.message || 'Failed to close hunt');
         }
+    } catch (error) {
+        log('Exception while closing event:', error);
+        showError('An unexpected error occurred while closing the hunt');
     }
 };
 

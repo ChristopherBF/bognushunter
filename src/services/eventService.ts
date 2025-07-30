@@ -178,16 +178,71 @@ export async function updateStartingBalance(
  */
 export async function closeEvent(eventId: string): Promise<{ success: boolean, error: Error | null }> {
   try {
+    console.log('closeEvent: Starting to close event with ID:', eventId);
     const supabase = getSupabaseClient();
-    const { error } = await supabase
+    
+    // First, verify the event exists
+    const { data: eventExists, error: checkError } = await supabase
+      .from('suggestion_events')
+      .select('id, open')
+      .eq('id', eventId)
+      .maybeSingle();
+      
+    if (checkError) {
+      console.error('closeEvent: Error checking if event exists:', checkError);
+      return { success: false, error: checkError };
+    }
+    
+    if (!eventExists) {
+      console.error('closeEvent: Event does not exist:', eventId);
+      return { success: false, error: new Error('Event not found') };
+    }
+    
+    console.log('closeEvent: Event found, current open status:', eventExists.open);
+    
+    // Update the event to close it
+    const { data, error } = await supabase
       .from('suggestion_events')
       .update({ open: false })
-      .eq('id', eventId);
+      .eq('id', eventId)
+      .select('id, open'); // Return the updated data to verify the change
+      
     if (error) {
+      console.error('closeEvent: Error updating event:', error);
       return { success: false, error };
     }
+    
+    console.log('closeEvent: Update result - data:', data);
+    
+    // Verify the update actually happened by checking if data is returned
+    if (!data || data.length === 0) {
+      console.error('closeEvent: No rows were updated - this suggests a permission or constraint issue');
+      return { success: false, error: new Error('No rows were updated - check database permissions') };
+    }
+    
+    // Double-check by reading the event back from the database
+    const { data: verifyData, error: verifyError } = await supabase
+      .from('suggestion_events')
+      .select('id, open')
+      .eq('id', eventId)
+      .single();
+      
+    if (verifyError) {
+      console.error('closeEvent: Error verifying update:', verifyError);
+      return { success: false, error: verifyError };
+    }
+    
+    console.log('closeEvent: Verification - event status after update:', verifyData);
+    
+    if (verifyData.open !== false) {
+      console.error('closeEvent: Update did not persist - database shows open:', verifyData.open);
+      return { success: false, error: new Error('Update did not persist in database') };
+    }
+    
+    console.log('closeEvent: Event successfully closed and verified in database');
     return { success: true, error: null };
   } catch (e) {
+    console.error('closeEvent: Exception occurred:', e);
     return {
       success: false,
       error: e instanceof Error ? e : new Error('Unknown error closing event')
@@ -239,11 +294,22 @@ export async function getFirstOpenEventId(): Promise<{
     const { data, error } = await supabase
       .from('suggestion_events')
       .select('id')
+      .eq('open', true)
+      .order('date', { ascending: false })
       .limit(1)
       .single();
 
-      console.log(error)
+    if (error) {
+      console.log('Error fetching first open event:', error);
+      return { eventId: null, error };
+    }
 
+    if (!data) {
+      return { 
+        eventId: null, 
+        error: new Error('No open events found') 
+      };
+    }
     
     return { eventId: data.id, error: null };
   } catch (e) {

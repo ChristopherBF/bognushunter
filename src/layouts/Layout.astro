@@ -32,9 +32,9 @@ if (!skipAuth) {
     <title>{title}</title>
   </head>
   <body class="bg-brown text-gold min-h-screen" style="background-color: #3c1600">
-    <nav class="bg-zinc-800 text-white p-4" style="background: transparent">
+    <nav class="bg-zinc-800 text-white py-2 px-3" style="background: transparent">
       <div class="container mx-auto flex justify-center items-center">
-        <img src={logoImage.src} alt="Heaton Logotype" class="h-96 w-auto" />
+        <img src={logoImage.src} alt="Heaton Logotype" class="h-16 w-auto" />
         <!-- {authenticated && (
           <div class="flex gap-4 items-center">
             {isAdmin ? (
@@ -55,7 +55,7 @@ if (!skipAuth) {
         )} -->
       </div>
     </nav>
-    <main class="container mx-auto p-6">
+    <main class="container mx-auto px-3 py-2">
       <slot />
     </main>
   </body>
