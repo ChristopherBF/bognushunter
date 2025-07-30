@@ -1,5 +1,7 @@
 import { getSupabaseClient } from '../lib/supabase';
 import type { Suggestion } from '../types/suggestion';
+import { addSuggestion } from './suggestionService';
+import { getFirstOpenEventId } from './eventService';
 
 /**
  * Service for handling hunt item-related operations with Supabase
@@ -259,6 +261,75 @@ export async function updateHuntItem(item: HuntItem): Promise<{
     return { 
       huntItem: null, 
       error: e instanceof Error ? e : new Error('Unknown error updating hunt item') 
+    };
+  }
+}
+
+/**
+ * Add a game directly to the hunt list from search results
+ * This function ensures the game is added as both a suggestion and hunt item
+ * @param eventId The ID of the event (optional - will use first open event if not provided)
+ * @param gameName The name of the game to add
+ * @param userId The ID of the user adding the game
+ * @param customThumb Optional custom thumbnail URL
+ * @param urlBackground Optional background URL
+ * @returns The added hunt item and any error
+ */
+export async function addGameToHunt(
+  eventId: string | null,
+  gameName: string,
+  userId: string,
+  customThumb?: string,
+  urlBackground?: string
+): Promise<{ huntItem: HuntItem | null, error: Error | null, exists: boolean }> {
+  try {
+    let finalEventId = eventId;
+    
+    // If no eventId provided, use the first open event
+    if (!eventId) {
+      const { eventId: firstOpenEventId, error: eventError } = await getFirstOpenEventId();
+      
+      if (eventError || !firstOpenEventId) {
+        return { 
+          huntItem: null, 
+          error: new Error('No open events available. Please create an event first.'), 
+          exists: false 
+        };
+      }
+      
+      finalEventId = firstOpenEventId;
+    }
+
+    // First, add the game as a suggestion (this ensures consistency)
+    const { suggestion, error: suggestionError } = await addSuggestion(
+      finalEventId,
+      gameName,
+      userId,
+      customThumb,
+      urlBackground
+    );
+
+    if (suggestionError || !suggestion) {
+      return { 
+        huntItem: null, 
+        error: suggestionError || new Error('Failed to create suggestion'), 
+        exists: false 
+      };
+    }
+
+    // Now add it to the hunt list using the existing addToHunt function
+    const { huntItem, error: huntError, exists } = await addToHunt(finalEventId, suggestion);
+
+    if (huntError) {
+      return { huntItem: null, error: huntError, exists };
+    }
+
+    return { huntItem, error: null, exists };
+  } catch (e) {
+    return { 
+      huntItem: null, 
+      error: e instanceof Error ? e : new Error('Unknown error adding game to hunt list'), 
+      exists: false 
     };
   }
 }

@@ -3,6 +3,102 @@
     <div class="bg-brown rounded-lg shadow p-6">
       <h2 class="text-xl font-semibold mb-4 text-gold">Hunt List</h2>
       
+      <!-- Game Search Section -->
+      <div class="mb-6 p-4 bg-brown-dark rounded-lg border border-orange">
+        <h3 class="text-lg font-semibold mb-3 text-gold">Add Games to Hunt</h3>
+        
+        <!-- Search input -->
+        <div class="mb-3">
+          <div class="relative">
+            <input
+              style="background-color: #592101"
+              v-model="searchTerm"
+              @input="handleSearchInput"
+              type="text"
+              placeholder="Search for games to add to hunt list..."
+              class="w-full px-3 py-2 text-sm border rounded-md pr-10 text-gold"
+            />
+            <button 
+              @click="resetAndFetchGames"
+              class="absolute right-2 top-1/2 transform -translate-y-1/2 text-gold hover:text-gray-700 bg-orange p-1 rounded"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+              </svg>
+            </button>
+          </div>
+        </div>
+        
+        <!-- Loading indicator for games -->
+        <div v-if="gamesLoading" class="flex justify-center my-4">
+          <div class="w-6 h-6 border-2 border-orange border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        
+        <!-- Games list -->
+        <div v-else-if="!gamesLoading && games.length > 0" class="space-y-2 max-h-60 overflow-y-auto">
+          <div
+            v-for="game in games"
+            :key="game._id || game.game_id"
+            class="flex items-center p-2 border rounded hover:bg-orange-900/40 transition-all duration-200"
+          >
+            <!-- Game thumbnail -->
+            <div class="relative w-10 h-10 mr-3 overflow-hidden rounded flex-shrink-0">
+              <img 
+                :src="game.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/') || game.url_thumb" 
+                :alt="game.name" 
+                class="w-full h-full object-cover"
+                @error="handleGameImageError($event, game)"
+              />
+            </div>
+            
+            <!-- Game details -->
+            <div class="flex-grow min-w-0">
+              <div class="flex items-center justify-between">
+                <span class="font-medium text-gold text-sm truncate">{{ formatGameName(game.name) }}</span>
+                <span v-if="game.rtp" class="text-xs px-1.5 py-0.5 bg-green-100 text-green-800 rounded ml-2 flex-shrink-0">{{ game.rtp }}%</span>
+              </div>
+              <div class="text-gold text-xs opacity-75">{{ game.provider }}</div>
+            </div>
+            
+            <!-- Add to hunt button -->
+            <button
+              @click="addGameToHunt(game)"
+              :disabled="isGameInHuntList(game.name)"
+              class="px-3 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors ml-2"
+              :title="isGameInHuntList(game.name) ? 'Already in hunt list' : 'Add to hunt list'"
+            >
+              {{ isGameInHuntList(game.name) ? '✓ Added' : '+ Add to Hunt' }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- No results message -->
+        <div v-else-if="!gamesLoading && games.length === 0 && searchTerm.trim() !== ''" class="text-center py-4">
+          <p class="text-gold text-sm">No games found. Try a different search term.</p>
+        </div>
+        
+        <!-- Pagination controls -->
+        <div v-if="games.length > 0" class="mt-3 flex justify-between items-center text-sm">
+          <button 
+            @click="prevPage" 
+            :disabled="currentPage === 1 || !hasPrevPage"
+            class="px-3 py-1.5 border rounded bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            Previous
+          </button>
+          
+          <span class="text-gold">Page {{ currentPage }}</span>
+          
+          <button 
+            @click="nextPage" 
+            :disabled="!hasNextPage"
+            class="px-3 py-1.5 border rounded bg-orange text-gold disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+          >
+            Next
+          </button>
+        </div>
+      </div>
+      
       <div v-if="loading" class="flex justify-center my-8">
         <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
@@ -83,7 +179,7 @@ import { ref, onMounted, computed } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
 import { formatItemName } from '../../lib/utils';
 import { showSuccess, showError, showInfo } from '../../lib/toast';
-import { fetchHuntList as fetchHuntListService, updateHuntItem as updateHuntItemService, removeFromHunt as removeFromHuntService } from '../../services/huntItemService';
+import { fetchHuntList as fetchHuntListService, updateHuntItem as updateHuntItemService, removeFromHunt as removeFromHuntService, addGameToHunt as addGameToHuntService } from '../../services/huntItemService';
 import { getEvent, updateStartingBalance as updateStartingBalanceService, updateCurrentBalance as updateCurrentBalanceService } from '../../services/eventService';
 
 // Import the HuntListItem component
@@ -104,6 +200,17 @@ const loading = ref(true);
 const huntList = ref<any[]>([]);
 const startingBalance = ref(0);
 const currentBalance = ref<number | null>(null);
+
+// Game search state
+const games = ref<any[]>([]);
+const gamesLoading = ref(false);
+const searchTerm = ref('');
+const searchTimeout = ref<number | null>(null);
+const currentPage = ref(1);
+const totalItems = ref(0);
+const itemsPerPage = ref(20);
+const hasPrevPage = ref(false);
+const hasNextPage = ref(false);
 
 // Logging function
 const log = (...args: any[]) => {
@@ -364,6 +471,167 @@ const getPlaceholderImage = (itemName: string) => {
 const handleImageError = (event: Event, item: any) => {
   const target = event.target as HTMLImageElement;
   target.src = getPlaceholderImage(item.item);
+};
+
+// Game search functions
+// Format game name to be more readable
+const formatGameName = (name: string) => {
+  if (!name) return '';
+  return name
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Handle game image loading errors
+const handleGameImageError = (event: Event, game: any) => {
+  const target = event.target as HTMLImageElement;
+  // Try fallback image if available
+  if (target.src !== game.custom_thumb && game.custom_thumb) {
+    target.src = game.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/');
+  } else {
+    // Use a placeholder if both images fail
+    target.src = `https://via.placeholder.com/300x200/e2e8f0/64748b?text=${encodeURIComponent(formatGameName(game.name))}`;
+  }
+};
+
+// Check if game is already in hunt list
+const isGameInHuntList = (gameName: string) => {
+  return huntList.value.some(item => item.item === gameName);
+};
+
+// Handle search input with debounce
+const handleSearchInput = () => {
+  // Clear any existing timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+  
+  // Set a new timeout to delay the search
+  searchTimeout.value = setTimeout(() => {
+    resetAndFetchGames();
+    showInfo('Searching for games...');
+  }, 500) as unknown as number;
+};
+
+// Fetch games from the API
+const fetchGames = async () => {
+  // Don't make a request if search term is empty
+  if (!searchTerm.value.trim()) {
+    games.value = [];
+    totalItems.value = 0;
+    gamesLoading.value = false;
+    return;
+  }
+  
+  gamesLoading.value = true;
+  console.log('Fetching games with params:', {
+    search: searchTerm.value,
+    page: currentPage.value,
+    perPage: itemsPerPage.value
+  });
+  
+  try {
+    // Use our server-side API endpoint to avoid CORS issues
+    const apiUrl = '/bognushunter/api/games';
+    
+    const response = await fetch(apiUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        search: searchTerm.value,
+        page: currentPage.value,
+        perPage: itemsPerPage.value
+      }),
+      headers: {
+        'Content-Type': 'application/json; charset=UTF-8',
+        'Accept': 'application/json'
+      }
+    });
+    
+    if (!response.ok) {
+      throw new Error(`API responded with status: ${response.status}`);
+    }
+    
+    const data = await response.json();
+    
+    // Update state with the fetched data
+    games.value = data.results || [];
+    totalItems.value = data.pagination?.totalEntries || 0;
+    hasPrevPage.value = data.pagination?.hasPrev || false;
+    hasNextPage.value = data.pagination?.hasNext || false;
+  } catch (error) {
+    console.error('Error fetching games:', error);
+    showError('Failed to load games. Please try again.');
+    games.value = [];
+    totalItems.value = 0;
+    hasPrevPage.value = false;
+    hasNextPage.value = false;
+  } finally {
+    gamesLoading.value = false;
+  }
+};
+
+// Reset pagination and fetch games
+const resetAndFetchGames = () => {
+  currentPage.value = 1;
+  fetchGames();
+};
+
+// Pagination methods
+const nextPage = () => {
+  if (hasNextPage.value) {
+    currentPage.value++;
+    fetchGames();
+  }
+};
+
+const prevPage = () => {
+  if (hasPrevPage.value && currentPage.value > 1) {
+    currentPage.value--;
+    fetchGames();
+  }
+};
+
+// Add game to hunt list
+const addGameToHunt = async (game: any) => {
+  if (isGameInHuntList(game.name)) {
+    showInfo(`"${formatGameName(game.name)}" is already in the hunt list`);
+    return;
+  }
+  
+  try {
+    console.log('Adding game to hunt list:', game);
+    
+    // Use the addGameToHunt service which handles both suggestion and hunt list addition
+    const { huntItem, error, exists } = await addGameToHuntService(
+      props.eventId,
+      game.name,
+      props.userId,
+      game.custom_thumb || game.url_thumb || null,
+      game.url_background || null
+    );
+    
+    if (error) {
+      console.error('Error adding to hunt list:', error);
+      showError(`Failed to add "${formatGameName(game.name)}" to hunt list: ${error.message}`);
+      return;
+    }
+    
+    if (exists) {
+      showInfo(`"${formatGameName(game.name)}" is already in the hunt list`);
+      return;
+    }
+    
+    // Refresh the hunt list to show the new item
+    await fetchHuntList();
+    
+    showSuccess(`"${formatGameName(game.name)}" added to hunt list!`);
+    console.log('Game added to hunt list successfully:', huntItem);
+  } catch (error) {
+    console.error('Error adding to hunt list:', error);
+    showError(`Failed to add "${formatGameName(game.name)}" to hunt list. Please try again.`);
+  }
 };
 
 // Lifecycle hooks

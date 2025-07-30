@@ -68,6 +68,18 @@
               <span v-if="game.features.length > 3" class="text-xs text-gold opacity-50">+{{ game.features.length - 3 }}</span>
             </div>
           </div>
+          
+          <!-- Action buttons -->
+          <div class="flex flex-col gap-1 ml-2">
+            <button
+              @click.stop="addToHuntList(game)"
+              :disabled="huntItems.includes(game.name)"
+              class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              :title="huntItems.includes(game.name) ? 'Already in hunt list' : 'Add to hunt list'"
+            >
+              {{ huntItems.includes(game.name) ? '✓ Hunt' : '+ Hunt' }}
+            </button>
+          </div>
         </div>
       </div>
       
@@ -118,19 +130,24 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue';
 import { getSupabaseClient } from '../../lib/supabase';
 import { addSuggestion } from '../../services/suggestionService';
+import { addGameToHunt } from '../../services/huntItemService';
 import { showSuccess, showError, showInfo, showWarning } from '../../lib/toast';
 import 'vue3-toastify/dist/index.css';
 import '../../styles/toast.css';
 
-// Props
-const props = defineProps<{
+// Props interface
+interface Props {
   eventId: string;
   userId: string;
-}>();
+}
+
+// Props
+const props = defineProps<Props>();
 
 // State
 const games = ref<any[]>([]);
 const suggestedItems = ref<string[]>([]);
+const huntItems = ref<string[]>([]);
 const loading = ref(false);
 const currentPage = ref(1);
 const totalItems = ref(0);
@@ -311,6 +328,84 @@ const suggestItem = async (item: string) => {
   }
 };
 
+// Add game to hunt list
+const addToHuntList = async (game: any) => {
+  if (huntItems.value.includes(game.name)) {
+    // Already in hunt list, ignore
+    return;
+  }
+  
+  try {
+    console.log('Adding game to hunt list:', game);
+    
+    // Use the addGameToHunt service which handles both suggestion and hunt list addition
+    const { huntItem, error, exists } = await addGameToHunt(
+      props.eventId,
+      game.name,
+      props.userId,
+      game.custom_thumb || game.url_thumb || null,
+      game.url_background || null
+    );
+    
+    if (error) {
+      console.error('Error adding to hunt list:', error);
+      showError(`Failed to add "${formatGameName(game.name)}" to hunt list: ${error.message}`);
+      return;
+    }
+    
+    if (exists) {
+      showInfo(`"${formatGameName(game.name)}" is already in the hunt list`);
+      return;
+    }
+    
+    // Update local state
+    huntItems.value.push(game.name);
+    if (!suggestedItems.value.includes(game.name)) {
+      suggestedItems.value.push(game.name);
+    }
+    
+    showSuccess(`"${formatGameName(game.name)}" added to hunt list!`);
+    console.log('Game added to hunt list successfully:', huntItem);
+  } catch (error) {
+    console.error('Error adding to hunt list:', error);
+    showError(`Failed to add "${formatGameName(game.name)}" to hunt list. Please try again.`);
+  }
+};
+
+// Fetch hunt items
+const fetchHuntItems = async () => {
+  const supabase = getSupabaseClient();
+  
+  try {
+    // Get hunt items for this event
+    const { data: huntItemsData, error: huntError } = await supabase
+      .from('hunt_items')
+      .select('suggestion_id')
+      .eq('event_id', props.eventId);
+    
+    if (huntError) throw huntError;
+    
+    if (huntItemsData && huntItemsData.length > 0) {
+      // Get the suggestion names for these hunt items
+      const suggestionIds = huntItemsData.map(item => item.suggestion_id);
+      
+      const { data: suggestionsData, error: suggestionsError } = await supabase
+        .from('suggestions')
+        .select('item')
+        .in('id', suggestionIds);
+        
+      if (suggestionsError) throw suggestionsError;
+      
+      huntItems.value = suggestionsData?.map(suggestion => suggestion.item) || [];
+    } else {
+      huntItems.value = [];
+    }
+  } catch (error) {
+    console.error('Error fetching hunt items:', error);
+    // Don't show error toast for this as it's not critical for the user experience
+  }
+};
+
 // Fetch suggested items
 const fetchSuggestedItems = async () => {
   const supabase = getSupabaseClient();
@@ -348,6 +443,8 @@ onMounted(() => {
   fetchGames();
   console.log('Called fetchGames, now calling fetchSuggestedItems...');
   fetchSuggestedItems();
+  console.log('Called fetchSuggestedItems, now calling fetchHuntItems...');
+  fetchHuntItems();
   
   console.log('Component initialization complete');
   
