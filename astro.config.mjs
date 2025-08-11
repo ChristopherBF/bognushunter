@@ -15,5 +15,9 @@ export default defineConfig({
     }
   },
   // Use static output for GitHub Pages (no SSR on Pages)
-  output: 'static'
+  output: 'static',
+  // Exclude server-only routes from the static build
+  build: {
+    exclude: ['/api/**', '/admin/**']
+  }
 });
