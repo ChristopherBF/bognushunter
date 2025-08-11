@@ -38,6 +38,6 @@ export const getSupabaseClient = (cookies?: AstroCookies) => {
   return supabase;
 };
 
-import type { HuntItem } from '../types/hunt';
-import type { Suggestion } from '../types/suggestion';
-import type { Event as SuggestionEvent } from '../types/event';
+import type { HuntItem } from '../types/hunt.ts';
+import type { Suggestion } from '../types/suggestion.ts';
+import type { Event as SuggestionEvent } from '../types/event.ts';

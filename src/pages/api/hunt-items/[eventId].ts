@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { fetchHuntList } from '../../../services/huntItemService';
+import { fetchHuntList } from '../../../services/huntItemService.ts';
 
 export const GET: APIRoute = async ({ params }) => {
   const { eventId } = params;

@@ -1,4 +1,4 @@
-import { supabase, getSupabaseClient } from './supabase'; // supabase is browser client
+import { supabase, getSupabaseClient } from './supabase.ts'; // supabase is browser client
 import type { AstroCookies } from 'astro';
 
 // Runs on CLIENT-SIDE (e.g., in a <script> tag or a .ts file imported by one)

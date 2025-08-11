@@ -1,4 +1,4 @@
 // Barrel file for types
-export * from './event';
-export * from './hunt';
-export * from './suggestion';
+export * from './event.ts';
+export * from './hunt.ts';
+export * from './suggestion.ts';

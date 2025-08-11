@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { addSuggestion } from '../../services/suggestionService';
+import { addSuggestion } from '../../services/suggestionService.ts';
 
 export const POST: APIRoute = async ({ request }) => {
   try {

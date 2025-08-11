@@ -1,12 +1,12 @@
-import { getSupabaseClient } from '../lib/supabase';
-import type { Suggestion } from '../types/suggestion';
-import { addSuggestion } from './suggestionService';
-import { getFirstOpenEventId } from './eventService';
+import { getSupabaseClient } from '../lib/supabase.ts';
+import type { Suggestion } from '../types/suggestion.ts';
+import { addSuggestion } from './suggestionService.ts';
+import { getFirstOpenEventId } from './eventService.ts';
 
 /**
  * Service for handling hunt item-related operations with Supabase
  */
-import type { HuntItem } from '../types/hunt';
+import type { HuntItem } from '../types/hunt.ts';
 
 /**
  * Fetch the hunt list for a specific event

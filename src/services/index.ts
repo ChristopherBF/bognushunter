@@ -1,4 +1,4 @@
 // Export all services for easier importing
-export * from './suggestionService';
-export * from './huntItemService';
-export * from './eventService';
+export * from './suggestionService.ts';
+export * from './huntItemService.ts';
+export * from './eventService.ts';

@@ -1,5 +1,5 @@
-import { getSupabaseClient } from '../lib/supabase';
-import type { Event } from '../types/event';
+import { getSupabaseClient } from '../lib/supabase.ts';
+import type { Event } from '../types/event.ts';
 
 /**
  * Service for handling event-related operations with Supabase

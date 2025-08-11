@@ -1,6 +1,6 @@
-import { getSupabaseClient } from './supabase';
+import { getSupabaseClient } from './supabase.ts';
 
-import type { HuntItemPayload, SuggestionPayload, SubscriptionCallback } from '../types/payloads';
+import type { HuntItemPayload, SuggestionPayload, SubscriptionCallback } from '../types/payloads.ts';
 
 // Store active subscriptions
 const activeSubscriptions: Record<string, any> = {};

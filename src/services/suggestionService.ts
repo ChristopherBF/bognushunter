@@ -1,6 +1,6 @@
-import { getSupabaseClient } from '../lib/supabase';
-import { getFirstOpenEventId } from './eventService';
-import type { Suggestion } from '../types/suggestion';
+import { getSupabaseClient } from '../lib/supabase.ts';
+import { getFirstOpenEventId } from './eventService.ts';
+import type { Suggestion } from '../types/suggestion.ts';
 
 /**
  * Service for handling suggestion-related operations with Supabase

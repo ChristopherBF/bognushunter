@@ -1,5 +1,5 @@
 import type { APIRoute } from "astro";
-import { getFirstOpenEventId } from "../../services/eventService";
+import { getFirstOpenEventId } from "../../services/eventService.ts";
 
 export const GET: APIRoute = async ({ request }) => {
     const { eventId, error } = await getFirstOpenEventId();
