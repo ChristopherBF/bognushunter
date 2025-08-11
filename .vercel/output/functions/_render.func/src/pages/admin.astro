@@ -1,0 +1,24 @@
+---
+console.log('[admin.astro] Page processing started on server...');
+import Layout from '../layouts/Layout.astro';
+import AdminDashboard from '../components/Admin/AdminDashboard.vue';
+import { getCurrentUser } from '../lib/auth';
+
+// Get the user using direct Supabase authentication
+const user = await getCurrentUser(Astro.cookies);
+console.log('[admin.astro] User from Supabase:', user ? 'authenticated' : 'not authenticated');
+
+// Admin-specific check - redirect if not authenticated
+if (!user) {
+  return Astro.redirect('/bognushunter/login');
+}
+
+// Default event ID
+const defaultEventId = "123e4567-e89b-12d3-a456-426614174000";
+const eventId = Astro.props.eventId || defaultEventId;
+console.log('[admin.astro] Event ID:', Astro.props);
+---
+
+<Layout title="Admin Dashboard" isAdmin>
+  <AdminDashboard client:load eventId={eventId} userId={user.id} />
+</Layout>

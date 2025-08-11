@@ -1,0 +1,21 @@
+---
+import Layout from '../layouts/Layout.astro';
+import { getSupabaseClient } from '../lib/supabase';
+
+// Check if user is authenticated
+const supabase = getSupabaseClient(Astro.cookies);
+const { data: { user } } = await supabase.auth.getUser();
+
+console.log('[suggestions.astro] User from Supabase:', user ? 'authenticated' : 'not authenticated');
+
+// Redirect to login if not authenticated
+if (!user) {
+  return Astro.redirect('/login');
+}
+
+// Get the base path for navigation
+const basePath = import.meta.env.BASE_URL || '/';
+
+// Redirect to admin page since no event ID is specified
+return Astro.redirect(`${basePath}admin`);
+---

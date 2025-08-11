@@ -1,0 +1,83 @@
+{
+	"version": 3,
+	"routes": [
+		{
+			"handle": "filesystem"
+		},
+		{
+			"src": "^/_astro/(.*)$",
+			"headers": {
+				"cache-control": "public, max-age=31536000, immutable"
+			},
+			"continue": true
+		},
+		{
+			"src": "^/_server-islands/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/_image/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/admin/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/first-event/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/game/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/games/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/api/hunt-items/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/callback/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/debug/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/huntlist/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/login/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/stream/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/suggest/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/suggestions/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/suggestions/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/summary/([^/]+?)/?$",
+			"dest": "_render"
+		},
+		{
+			"src": "^/$",
+			"dest": "_render"
+		}
+	]
+}

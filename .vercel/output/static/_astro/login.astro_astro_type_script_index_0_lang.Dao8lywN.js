@@ -1,0 +1,1 @@
+import{s as n}from"./auth.B4Ek5BWZ.js";import"./supabase.CYCWDCT1.js";document.addEventListener("DOMContentLoaded",()=>{const t=document.getElementById("twitch-login-button");t&&t.addEventListener("click",async()=>{try{await n()}catch(e){console.error("Login error:",e),alert("Failed to login. Please try again.")}})});

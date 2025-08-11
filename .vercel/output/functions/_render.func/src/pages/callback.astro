@@ -1,0 +1,123 @@
+---
+import { getSupabaseClient } from '../lib/supabase';
+
+// Get Supabase client with cookies for server-side auth
+const supabase = getSupabaseClient(Astro.cookies);
+
+// Handle the OAuth callback from Twitch via Supabase
+const { searchParams } = new URL(Astro.request.url);
+const code = searchParams.get('code');
+const error = searchParams.get('error');
+const errorDescription = searchParams.get('error_description');
+
+// If there's an error in the callback, log it
+if (error) {
+  console.error('Auth callback error:', error, errorDescription);
+}
+
+// Exchange the code for a session if present
+if (code) {
+  try {
+    // This will automatically set the cookies for the session
+    await supabase.auth.exchangeCodeForSession(code);
+
+    // After exchanging, get the user from the session
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError) {
+      console.error('Error getting user after session exchange:', userError);
+    } else if (user) {
+      // Check if user exists in the app's users table
+      const { data: existingUser, error: fetchError } = await supabase
+        .from('users')
+        .select('id')
+        .eq('id', user.id)
+        .single();
+      if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116: No rows found
+        console.error('Error checking user existence in users table:', fetchError);
+      }
+      if (!existingUser) {
+        // Insert user into users table
+        const { error: insertError } = await supabase.from('users').insert([
+          {
+            id: user.id,
+            email: user.email,
+            name: user.user_metadata?.full_name || user.user_metadata?.name || null,
+            avatar_url: user.user_metadata?.avatar_url || null
+          }
+        ]);
+        if (insertError) {
+          console.error('Error inserting user into users table:', insertError);
+        } else {
+          console.log('User inserted into users table:', user.id);
+        }
+      }
+    }
+  } catch (err) {
+    console.error('Error exchanging code for session:', err);
+  }
+}
+---
+
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width" />
+    <title>Authentication Callback</title>
+    <style>
+      body {
+        font-family:
+          system-ui,
+          -apple-system,
+          BlinkMacSystemFont,
+          sans-serif;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        margin: 0;
+        background-color: #f9fafb;
+      }
+      .container {
+        text-align: center;
+        padding: 2rem;
+        background-color: white;
+        border-radius: 0.5rem;
+        box-shadow:
+          0 4px 6px -1px rgba(0, 0, 0, 0.1),
+          0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        max-width: 28rem;
+      }
+      .loader {
+        border: 4px solid #f3f3f3;
+        border-top: 4px solid #9146ff;
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        margin: 1.5rem auto;
+        animation: spin 2s linear infinite;
+      }
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+    </style>
+  </head>
+  <body class="bg-brown text-gold min-h-screen" class="bg-brown text-gold min-h-screen">
+    <div class="container">
+      <h1>Completing Sign In</h1>
+      <p>Please wait while we finish authentication...</p>
+      <div class="loader"></div>
+    </div>
+
+    <script>
+      // Redirect to home page after a short delay
+      setTimeout(() => {
+        window.location.href = "/bognushunter/";
+      }, 1500);
+    </script>
+  </body>
+</html>

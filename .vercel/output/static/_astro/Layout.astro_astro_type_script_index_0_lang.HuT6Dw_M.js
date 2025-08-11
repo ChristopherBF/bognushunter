@@ -1,0 +1,1 @@
+import{a as n}from"./auth.B4Ek5BWZ.js";import"./supabase.CYCWDCT1.js";document.addEventListener("DOMContentLoaded",()=>{const o=document.getElementById("logout-button");o&&o.addEventListener("click",async()=>{try{await n(),window.location.href="/bognushunter/login"}catch(t){console.error("Logout error:",t)}})});
