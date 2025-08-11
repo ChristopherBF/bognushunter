@@ -6,6 +6,7 @@ import { g as getSupabaseClient } from '../chunks/supabase_CHjbA2D-.mjs';
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("https://ChristopherBF.github.io");
+const prerender = false;
 const $$Suggestions = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Suggestions;
@@ -25,6 +26,7 @@ const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: $$Suggestions,
   file: $$file,
+  prerender,
   url: $$url
 }, Symbol.toStringTag, { value: 'Module' }));
 

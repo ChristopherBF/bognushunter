@@ -5,6 +5,7 @@ import { $ as $$Layout } from '../chunks/Layout_D8JOSVxy.mjs';
 import { s as supabase } from '../chunks/supabase_CHjbA2D-.mjs';
 export { renderers } from '../renderers.mjs';
 
+const prerender = false;
 const $$Debug = createComponent(async ($$result, $$props, $$slots) => {
   const { data: { session } } = await supabase.auth.getSession();
   const user = session?.user;
@@ -30,6 +31,7 @@ const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: $$Debug,
   file: $$file,
+  prerender,
   url: $$url
 }, Symbol.toStringTag, { value: 'Module' }));
 

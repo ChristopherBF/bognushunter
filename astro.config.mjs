@@ -16,7 +16,7 @@ export default defineConfig({
     }
   },
   // Keep Node.js adapter for server-side rendering
-  output: 'hybrid',
+  output: 'server',
   adapter: vercel({
     edgeMiddleware: true,
   })

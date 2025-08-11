@@ -5,6 +5,7 @@ import { g as getCurrentUser, $ as $$Layout } from '../chunks/Layout_D8JOSVxy.mj
 export { renderers } from '../renderers.mjs';
 
 const $$Astro = createAstro("https://ChristopherBF.github.io");
+const prerender = false;
 const $$Login = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$Login;
@@ -26,6 +27,7 @@ const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
   __proto__: null,
   default: $$Login,
   file: $$file,
+  prerender,
   url: $$url
 }, Symbol.toStringTag, { value: 'Module' }));
 

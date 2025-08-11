@@ -649,6 +649,7 @@ _sfc_main.setup = (props, ctx) => {
 const HuntList = /* @__PURE__ */ _export_sfc(_sfc_main, [["ssrRender", _sfc_ssrRender]]);
 
 const $$Astro = createAstro("https://ChristopherBF.github.io");
+const prerender = false;
 const $$eventId = createComponent(async ($$result, $$props, $$slots) => {
   const Astro2 = $$result.createAstro($$Astro, $$props, $$slots);
   Astro2.self = $$eventId;
@@ -694,6 +695,7 @@ const _page = /*#__PURE__*/Object.freeze(/*#__PURE__*/Object.defineProperty({
     __proto__: null,
     default: $$eventId,
     file: $$file,
+    prerender,
     url: $$url
 }, Symbol.toStringTag, { value: 'Module' }));
 

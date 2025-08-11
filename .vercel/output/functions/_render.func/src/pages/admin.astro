@@ -1,5 +1,6 @@
 ---
 console.log('[admin.astro] Page processing started on server...');
+export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 import AdminDashboard from '../components/Admin/AdminDashboard.vue';
 import { getCurrentUser } from '../lib/auth';
