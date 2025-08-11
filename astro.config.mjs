@@ -15,5 +15,9 @@ export default defineConfig({
       include: ['vue']
     }
   },
-
+  // Keep Node.js adapter for server-side rendering
+  adapter: node({
+    mode: 'standalone'
+  }),
+  output: 'server' // Ensure server-side rendering for auth
 });
