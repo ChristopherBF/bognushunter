@@ -1,7 +1,21 @@
 <template>
-  <div class="space-y-6">
-    <div class="bg-brown rounded-lg shadow p-6">
-      <h2 class="text-xl font-semibold mb-4 text-gold">Hunt List</h2>
+  <div class="flex gap-6">
+    <!-- Main Content -->
+    <div class="flex-1 space-y-6">
+      <div class="bg-brown rounded-lg shadow p-6">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl font-semibold text-gold">Hunt List</h2>
+        <button
+          @click="openStreamWindow"
+          class="flex items-center gap-2 px-3 py-1.5 bg-violet-600 hover:bg-violet-700 text-white text-sm rounded-md transition-colors"
+          title="Open Stream Element in New Window"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Stream Element
+        </button>
+      </div>
       
       <!-- Game Search Section -->
       <div class="mb-6 p-4 bg-brown-dark rounded-lg border border-orange">
@@ -99,6 +113,23 @@
         </div>
       </div>
       
+      <!-- Summary header -->
+      <div v-if="!loading" class="mb-3">
+        <div class="flex flex-wrap items-center gap-3 px-3 py-2 bg-brown-dark rounded border border-orange">
+          <div class="text-xs text-gold/80">Starting</div>
+          <div class="text-sm font-semibold text-gold">{{ formattedStartingBalance }}</div>
+          <span class="mx-2 h-4 w-px bg-orange/40"></span>
+          <div class="text-xs text-gold/80">Items</div>
+          <div class="text-sm font-semibold text-gold">{{ totalItemsCount }}</div>
+          <span class="mx-2 h-4 w-px bg-orange/40"></span>
+          <div class="text-xs text-gold/80">Bonuses</div>
+          <div class="text-sm font-semibold text-violet-300">{{ totalBonusCount }}</div>
+          <span class="mx-2 h-4 w-px bg-orange/40"></span>
+          <div class="text-xs text-gold/80">Super</div>
+          <div class="text-sm font-semibold text-amber-300">{{ totalSuperBonusCount }}</div>
+        </div>
+      </div>
+      
       <div v-if="loading" class="flex justify-center my-8">
         <div class="w-12 h-12 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
       </div>
@@ -113,14 +144,11 @@
       </div>
       <div v-else class="text-center py-8">
         <p class="text-gold">No items in the hunt list yet.</p>
-        <p class="text-gold mt-2">
-          Add items from the <a :href="`${basePath}suggestions/${props.eventId}`" class="text-blue-500 underline">Suggestions page</a>.
-        </p>
       </div>
 
-    </div>
-    <!-- Summary section -->
-    <div v-if="huntList.length > 0" class="mt-8 p-4 border rounded-lg bg-brown border-orange">
+      </div>
+      <!-- Summary section -->
+    <!-- <div v-if="huntList.length > 0" class="mt-8 p-4 border rounded-lg bg-brown border-orange">
       <h3 class="text-lg font-semibold mb-2 text-gold">Hunt Summary</h3>
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         <div class="p-3 bg-brown rounded shadow">
@@ -159,7 +187,7 @@
             placeholder="Enter starting balance"
           />
         </div>
-        <!-- <div class="flex-1 flex items-center gap-2">
+        <div class="flex-1 flex items-center gap-2">
           <label class="text-sm text-gold">Current Balance:</label>
           <input
             type="number"
@@ -168,7 +196,64 @@
             @input="updateCurrentBalance"
             placeholder="Enter current balance"
           />
-        </div> -->
+        </div>
+      </div>
+      </div> -->
+    </div>
+    
+    <!-- Suggestions Sidebar -->
+    <div class="w-80 space-y-3">
+      <div class="bg-brown rounded-lg shadow p-4">
+        <div class="flex items-center justify-between mb-3">
+          <h3 class="text-lg font-semibold text-gold">Suggestions</h3>
+          <span class="text-sm text-orange bg-brown-dark px-2 py-1 rounded">{{ suggestions.length }}</span>
+        </div>
+        
+        <!-- Loading indicator -->
+        <div v-if="suggestionsLoading" class="flex justify-center my-4">
+          <div class="w-6 h-6 border-2 border-orange border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        
+        <!-- Suggestions list -->
+        <div v-else-if="suggestions.length > 0" class="space-y-2 max-h-96 overflow-y-auto">
+          <div
+            v-for="suggestion in suggestions"
+            :key="suggestion.id"
+            class="flex items-center p-2 border rounded hover:bg-orange-900/40 transition-all duration-200"
+          >
+            <!-- Game thumbnail -->
+            <div class="relative w-8 h-8 mr-2 overflow-hidden rounded flex-shrink-0">
+              <img 
+                :src="suggestion.custom_thumb?.replace('cdn://', 'https://cdnv1.500.casino/') || suggestion.url_thumb || '/placeholder-game.png'" 
+                :alt="suggestion.item" 
+                class="w-full h-full object-cover"
+                @error="handleSuggestionImageError($event)"
+              />
+            </div>
+            
+            <!-- Suggestion details -->
+            <div class="flex-grow min-w-0 mr-2">
+              <div class="font-medium text-gold text-sm truncate">{{ formatGameName(suggestion.item) }}</div>
+              <div class="text-xs text-orange">{{ suggestion.count }} suggestion{{ suggestion.count > 1 ? 's' : '' }}</div>
+            </div>
+            
+            <!-- Add to hunt button -->
+            <button
+              @click="addSuggestionToHunt(suggestion)"
+              :disabled="isGameInHuntList(suggestion.item)"
+              class="px-2 py-1 text-xs bg-red-600 text-white rounded hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
+              :title="isGameInHuntList(suggestion.item) ? 'Already in hunt list' : 'Add to hunt list'"
+            >
+              {{ isGameInHuntList(suggestion.item) ? '✓' : '+' }}
+            </button>
+          </div>
+        </div>
+        
+        <!-- No suggestions message -->
+        <div v-else class="text-center py-4">
+          <p class="text-gold text-sm">No suggestions yet.</p>
+          <p class="text-gold text-xs opacity-75 mt-1">Users can add suggestions from the main page.</p>
+        </div>
       </div>
     </div>
   </div>
@@ -181,10 +266,12 @@ import { formatItemName } from '../../lib/utils';
 import { showSuccess, showError, showInfo } from '../../lib/toast';
 import { fetchHuntList as fetchHuntListService, updateHuntItem as updateHuntItemService, removeFromHunt as removeFromHuntService, addGameToHunt as addGameToHuntService } from '../../services/huntItemService';
 import { getEvent, updateStartingBalance as updateStartingBalanceService, updateCurrentBalance as updateCurrentBalanceService } from '../../services/eventService';
-
-// Import the HuntListItem component
+import { fetchSuggestions } from '../../services/suggestionService';
+import 'vue3-toastify/dist/index.css';
+import '../../styles/toast.css';
 import HuntListItem from './HuntListItem.vue';
 import type { HuntItem } from '../../types/hunt';
+import type { Suggestion } from '../../types/suggestion';
 
 // Debug flag
 const DEBUG = true;
@@ -209,8 +296,25 @@ const searchTimeout = ref<number | null>(null);
 const currentPage = ref(1);
 const totalItems = ref(0);
 const itemsPerPage = ref(20);
+
+// Summary computed values
+const totalItemsCount = computed(() => huntList.value.length);
+const totalBonusCount = computed(() => huntList.value.filter(i => i.bonus === true).length);
+const totalSuperBonusCount = computed(() => huntList.value.filter(i => i.super_bonus === true).length);
+const formattedStartingBalance = computed(() => {
+  const n = startingBalance.value ?? 0;
+  try {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 }).format(n);
+  } catch {
+    return `$${Math.round(n).toLocaleString('en-US')}`;
+  }
+});
 const hasPrevPage = ref(false);
 const hasNextPage = ref(false);
+
+// Suggestions state
+const suggestions = ref<Suggestion[]>([]);
+const suggestionsLoading = ref(false);
 
 // Logging function
 const log = (...args: any[]) => {
@@ -221,6 +325,22 @@ const log = (...args: any[]) => {
 
 // Get the base path for navigation
 const basePath = computed(() => import.meta.env.BASE_URL || '/');
+
+// Open stream element in new window
+const openStreamWindow = () => {
+  console.log(`${window.location.origin}${basePath.value}stream/${props.eventId}`);
+  const streamUrl = `${window.location.origin}${basePath.value}stream/${props.eventId}`;
+  const windowFeatures = 'width=800,height=600,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no';
+  
+  const streamWindow = window.open(streamUrl, 'huntStreamElement', windowFeatures);
+  
+  if (streamWindow) {
+    streamWindow.focus();
+    showSuccess('Stream element opened in new window');
+  } else {
+    showError('Failed to open stream window. Please check your popup blocker settings.');
+  }
+};
 
 // Fetch the hunt list for the current event
 const fetchHuntList = async () => {
@@ -330,6 +450,16 @@ const updateHuntItem = async (item: any) => {
       return;
     }
     
+    // Update local list so computed summary updates immediately
+    const idx = huntList.value.findIndex((i) => i.id === huntItem.id);
+    if (idx !== -1) {
+      // Merge to preserve any local-only fields
+      huntList.value[idx] = { ...huntList.value[idx], ...huntItem } as any;
+    } else {
+      // If the item wasn't found (edge case), refetch the list
+      await fetchHuntList();
+    }
+
     log('Hunt item updated:', item.id);
     showSuccess('Hunt item updated successfully');
   } catch (e) {
@@ -634,9 +764,145 @@ const addGameToHunt = async (game: any) => {
   }
 };
 
+// Fetch suggestions for the sidebar
+const fetchSuggestionsData = async () => {
+  try {
+    suggestionsLoading.value = true;
+    log('Fetching suggestions for event:', props.eventId);
+    
+    const { suggestions: fetchedSuggestions, error } = await fetchSuggestions(props.eventId);
+    
+    if (error) {
+      console.error('Error fetching suggestions:', error);
+      showError(`Failed to load suggestions: ${error.message}`);
+      return;
+    }
+    
+    suggestions.value = fetchedSuggestions;
+    log('Suggestions fetched:', suggestions.value.length);
+  } catch (e) {
+    console.error('Exception during suggestions fetching:', e);
+    showError(`Failed to load suggestions: ${e instanceof Error ? e.message : 'Unknown error'}`);
+  } finally {
+    suggestionsLoading.value = false;
+  }
+};
+
+// Handle suggestion image loading errors
+const handleSuggestionImageError = (event: Event) => {
+  const img = event.target as HTMLImageElement;
+  img.src = '/placeholder-game.png';
+};
+
+// Add suggestion to hunt list
+const addSuggestionToHunt = async (suggestion: Suggestion) => {
+  if (isGameInHuntList(suggestion.item)) {
+    showInfo(`"${formatGameName(suggestion.item)}" is already in the hunt list`);
+    return;
+  }
+  
+  try {
+    console.log('Adding suggestion to hunt list:', suggestion);
+    
+    // Use the addGameToHunt service which handles both suggestion and hunt list addition
+    const { huntItem, error, exists } = await addGameToHuntService(
+      props.eventId,
+      suggestion.item,
+      props.userId,
+      suggestion.custom_thumb || suggestion.url_thumb || null,
+      suggestion.url_background || null
+    );
+    
+    if (error) {
+      console.error('Error adding suggestion to hunt list:', error);
+      showError(`Failed to add "${formatGameName(suggestion.item)}" to hunt list: ${error.message}`);
+      return;
+    }
+    
+    if (exists) {
+      showInfo(`"${formatGameName(suggestion.item)}" is already in the hunt list`);
+      return;
+    }
+    
+    // Refresh the hunt list to show the new item
+    await fetchHuntList();
+    
+    showSuccess(`"${formatGameName(suggestion.item)}" added to hunt list!`);
+    console.log('Suggestion added to hunt list successfully:', huntItem);
+  } catch (error) {
+    console.error('Error adding suggestion to hunt list:', error);
+    showError(`Failed to add "${formatGameName(suggestion.item)}" to hunt list. Please try again.`);
+  }
+};
+
+// Setup real-time subscription for suggestions
+const setupSuggestionsSubscription = () => {
+  const supabase = getSupabaseClient();
+  
+  log('Setting up real-time subscription for suggestions');
+  
+  const suggestionsChannel = supabase
+    .channel('suggestions-changes')
+    .on(
+      'postgres_changes',
+      {
+        event: '*', // Listen to all events (INSERT, UPDATE, DELETE)
+        schema: 'public',
+        table: 'suggestions',
+        filter: `event_id=eq.${props.eventId}`
+      },
+      (payload) => {
+        log('Suggestions change detected:', payload);
+        
+        // Debounce the refetch to avoid too many rapid updates
+        if (suggestionsRefreshTimeout.value) {
+          clearTimeout(suggestionsRefreshTimeout.value);
+        }
+        
+        suggestionsRefreshTimeout.value = setTimeout(() => {
+          log('Refreshing suggestions due to real-time update');
+          fetchSuggestionsData();
+        }, 500) as unknown as number;
+      }
+    )
+    .subscribe((status) => {
+      log('Suggestions subscription status:', status);
+    });
+    
+  return suggestionsChannel;
+};
+
+// Cleanup function for subscriptions
+const cleanupSubscriptions = (channel: any) => {
+  if (channel) {
+    log('Cleaning up suggestions subscription');
+    channel.unsubscribe();
+  }
+};
+
 // Lifecycle hooks
+let suggestionsChannel: any;
+const suggestionsRefreshTimeout = ref<number | null>(null);
+
 onMounted(async () => {
   log('Component mounted');
   await fetchHuntList();
+  await fetchSuggestionsData();
+  
+  // Setup real-time subscription
+  suggestionsChannel = setupSuggestionsSubscription();
+});
+
+// Cleanup on unmount
+import { onUnmounted } from 'vue';
+
+onUnmounted(() => {
+  log('Component unmounting, cleaning up subscriptions');
+  cleanupSubscriptions(suggestionsChannel);
+  
+  // Clear any pending timeouts
+  if (suggestionsRefreshTimeout.value) {
+    clearTimeout(suggestionsRefreshTimeout.value);
+  }
 });
 </script>

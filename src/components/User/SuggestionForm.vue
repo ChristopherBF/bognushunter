@@ -210,7 +210,6 @@ const fetchGames = async () => {
     games.value = [];
     totalItems.value = 0;
     loading.value = false;
-    showInfo('No search term entered');
     return;
   }
   

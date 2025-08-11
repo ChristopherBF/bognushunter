@@ -45,7 +45,7 @@
                     <label class="text-sm text-gold">Done:</label>
                     <input type="checkbox" v-model="localItem.completed"
                         class="form-checkbox h-5 w-5 text-orange-600 rounded border-orange-400 focus:ring-orange-500"
-                        @input="updateItem" />
+                        @change="updateItem" />
                 </div>
 
                 <!-- Remove button -->

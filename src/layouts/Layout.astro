@@ -6,9 +6,10 @@ interface Props {
   title: string;
   isAdmin?: boolean;
   skipAuth?: boolean;
+  hideNav?: boolean; // when true, hide the header/nav and logo
 }
 
-const { title, isAdmin, skipAuth = false } = Astro.props;
+const { title, isAdmin, skipAuth = false, hideNav = false } = Astro.props;
 
 // Check for authentication
 let authenticated = false;
@@ -32,29 +33,31 @@ if (!skipAuth) {
     <title>{title}</title>
   </head>
   <body class="bg-brown text-gold min-h-screen" style="background-color: #3c1600">
-    <nav class="bg-zinc-800 text-white py-2 px-3" style="background: transparent">
-      <div class="container mx-auto flex justify-center items-center">
-        <img src={logoImage.src} alt="Heaton Logotype" class="h-72 w-auto" />
-        <!-- {authenticated && (
-          <div class="flex gap-4 items-center">
-            {isAdmin ? (
-              <a href="/admin" class="hover:underline">Admin Dashboard</a>
-            ) : (
-              <a href="/" class="hover:underline">Suggest Items</a>
-            )}
-            <div class="flex items-center gap-2">
-              <span class="text-sm">Welcome, {user?.user_metadata?.name || user?.email || 'User'}</span>
-              <button
-                id="logout-button"
-                class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
-              >
-                Logout
-              </button>
+    { !hideNav && (
+      <nav class="bg-zinc-800 text-white py-2 px-3" style="background: transparent">
+        <div class="container mx-auto flex justify-center items-center">
+          <img src={logoImage.src} alt="Heaton Logotype" class="h-72 w-auto" />
+          <!-- {authenticated && (
+            <div class="flex gap-4 items-center">
+              {isAdmin ? (
+                <a href="/admin" class="hover:underline">Admin Dashboard</a>
+              ) : (
+                <a href="/" class="hover:underline">Suggest Items</a>
+              )}
+              <div class="flex items-center gap-2">
+                <span class="text-sm">Welcome, {user?.user_metadata?.name || user?.email || 'User'}</span>
+                <button
+                  id="logout-button"
+                  class="px-3 py-1 bg-red-500 text-white text-sm rounded hover:bg-red-600"
+                >
+                  Logout
+                </button>
+              </div>
             </div>
-          </div>
-        )} -->
-      </div>
-    </nav>
+          )} -->
+        </div>
+      </nav>
+    )}
     <main class="container mx-auto px-3 py-2">
       <slot />
     </main>
