@@ -16,7 +16,7 @@ export default defineConfig({
     }
   },
   // Keep Node.js adapter for server-side rendering
-  adapter: node({
+  adapter: vercel({
     mode: 'standalone'
   }),
   output: 'server' // Ensure server-side rendering for auth
