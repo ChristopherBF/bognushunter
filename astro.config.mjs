@@ -7,7 +7,7 @@ export default defineConfig({
   site: 'https://ChristopherBF.github.io',
   base: 'bognushunter',
   integrations: [
-    vue(),
+    vue({ appEntrypoint: '/src/pages/admin' }),
     tailwind()
   ],
   vite: {
