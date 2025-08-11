@@ -5,7 +5,7 @@ import node from '@astrojs/node';
 
 export default defineConfig({
   site: 'https://ChristopherBF.github.io',
-  base: '/bognushunter/',
+  base: 'bognushunter',
   integrations: [
     vue(),
     tailwind()
@@ -15,9 +15,5 @@ export default defineConfig({
       include: ['vue']
     }
   },
-  // Keep Node.js adapter for server-side rendering
-  adapter: node({
-    mode: 'standalone'
-  }),
-  output: 'server' // Ensure server-side rendering for auth
+
 });
