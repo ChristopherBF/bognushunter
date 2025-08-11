@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import vue from '@astrojs/vue';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel';
+import vercelServerless from '@astrojs/vercel/serverless';
 
 export default defineConfig({
   site: 'https://ChristopherBF.github.io',
@@ -16,8 +16,6 @@ export default defineConfig({
     }
   },
   // Keep Node.js adapter for server-side rendering
-  adapter: vercel({
-    mode: 'standalone'
-  }),
+  adapter: vercelServerless(),
   output: 'server' // Ensure server-side rendering for auth
 });
