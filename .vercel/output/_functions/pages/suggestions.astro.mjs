@@ -1,5 +1,5 @@
 /* empty css                                 */
-import { e as createAstro, f as createComponent } from '../chunks/astro/server_CjfJncYZ.mjs';
+import { e as createAstro, f as createComponent } from '../chunks/astro/server_CU4hg0qs.mjs';
 import 'kleur/colors';
 import 'clsx';
 import { g as getSupabaseClient } from '../chunks/supabase_CHjbA2D-.mjs';

@@ -1,4 +1,4 @@
-import { e as createAstro, f as createComponent, h as addAttribute, l as renderHead, o as renderSlot, n as renderScript, r as renderTemplate } from './astro/server_CjfJncYZ.mjs';
+import { e as createAstro, f as createComponent, h as addAttribute, l as renderHead, o as renderSlot, n as renderScript, r as renderTemplate } from './astro/server_CU4hg0qs.mjs';
 import 'kleur/colors';
 import 'clsx';
 import { g as getSupabaseClient } from './supabase_CHjbA2D-.mjs';

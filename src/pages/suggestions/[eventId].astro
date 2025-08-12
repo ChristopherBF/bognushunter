@@ -14,16 +14,16 @@ const { data: { user } } = await supabase.auth.getUser();
 console.log('[suggestions.astro] User from Supabase:', user ? 'authenticated' : 'not authenticated');
 console.log('[suggestions.astro] Event ID:', eventId);
 
+// Get the base path for navigation
+const basePath = import.meta.env.BASE_URL || '/';
+
 // Redirect to login if not authenticated
 if (!user) {
-  return Astro.redirect('/login');
+  return Astro.redirect(`${basePath}login`);
 }
 
 // Get user ID for passing to component
 const userId = user.id;
-
-// Get the base path for navigation
-const basePath = import.meta.env.BASE_URL || '/';
 ---
 
 <Layout title="Suggestions">
@@ -44,7 +44,7 @@ const basePath = import.meta.env.BASE_URL || '/';
       />
     ) : (
       <div class="bg-yellow-100 border-l-4 border-yellow-500 text-yellow-700 p-3 mb-3 text-sm">
-        <p>No event selected. Please select an event from the <a href="/admin" class="underline">Admin Dashboard</a>.</p>
+        <p>No event selected. Please select an event from the <a href={`${basePath}admin`} class="underline">Admin Dashboard</a>.</p>
       </div>
     )}
   </main>

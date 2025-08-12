@@ -5,7 +5,8 @@ import vercel from '@astrojs/vercel';
 
 export default defineConfig({
   site: 'https://ChristopherBF.github.io',
-  base: 'bognushunter',
+  // Ensure base path works locally and on GitHub Pages (must start and end with '/')
+  base: '/bognushunter/',
   integrations: [
     vue(),
     tailwind()

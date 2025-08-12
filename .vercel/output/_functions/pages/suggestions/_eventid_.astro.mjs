@@ -1,7 +1,7 @@
 /* empty css                                    */
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../../chunks/astro/server_CjfJncYZ.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate, m as maybeRenderHead, h as addAttribute } from '../../chunks/astro/server_CU4hg0qs.mjs';
 import 'kleur/colors';
-import { $ as $$Layout } from '../../chunks/Layout_D8JOSVxy.mjs';
+import { $ as $$Layout } from '../../chunks/Layout_B5w-Bvlh.mjs';
 import { g as getSupabaseClient } from '../../chunks/supabase_CHjbA2D-.mjs';
 import { defineComponent, useSSRContext, computed, mergeProps, ref, onMounted, onUnmounted } from 'vue';
 /* empty css                                    */

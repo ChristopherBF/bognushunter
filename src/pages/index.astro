@@ -2,7 +2,10 @@
 export const prerender = false;
 import Layout from '../layouts/Layout.astro';
 import SuggestionForm from '../components/User/SuggestionForm.vue';
-import { getCurrentUser } from '../lib/auth';
+import { getCurrentUser } from '../lib/auth.ts';
+
+// Resolve base path for correct redirects under GitHub Pages
+const basePath = import.meta.env.BASE_URL || '/';
 
 // Get the user using direct Supabase authentication
 const user = await getCurrentUser(Astro.cookies);
@@ -10,13 +13,13 @@ console.log('[index.astro] User from Supabase:', user ? 'authenticated' : 'not a
 
 // If no user is authenticated, redirect to login
 if (!user) {
-  return Astro.redirect('/bognushunter/login');
+  return Astro.redirect(`${basePath}login`);
 }
 
 // Default event ID
 const defaultEventId = "123e4567-e89b-12d3-a456-426614174000";
-const eventId = Astro.props.eventId || defaultEventId;
-console.log('[index.astro] Event ID:', Astro.props.eventId);
+const eventId = defaultEventId;
+console.log('[index.astro] Event ID (default used on page):', eventId);
 ---
 
 <Layout title="Bognus Hunter Dashboard">

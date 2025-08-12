@@ -1,7 +1,7 @@
 /* empty css                                 */
-import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate } from '../chunks/astro/server_CjfJncYZ.mjs';
+import { e as createAstro, f as createComponent, k as renderComponent, r as renderTemplate } from '../chunks/astro/server_CU4hg0qs.mjs';
 import 'kleur/colors';
-import { g as getCurrentUser, $ as $$Layout } from '../chunks/Layout_D8JOSVxy.mjs';
+import { g as getCurrentUser, $ as $$Layout } from '../chunks/Layout_B5w-Bvlh.mjs';
 import { defineComponent, useSSRContext, mergeProps, ref, onMounted, nextTick, onUnmounted } from 'vue';
 import { g as getSupabaseClient } from '../chunks/supabase_CHjbA2D-.mjs';
 import { s as subscribeSuggestions } from '../chunks/realtime_mEKkIJwq.mjs';
