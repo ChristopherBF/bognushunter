@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import vue from '@astrojs/vue';
 import tailwind from '@astrojs/tailwind';
-import vercel from '@astrojs/vercel';
+import node from '@astrojs/node';
 
 export default defineConfig({
   site: 'https://ChristopherBF.github.io',
@@ -16,11 +16,8 @@ export default defineConfig({
       include: ['vue']
     }
   },
-  output: 'server',
-  adapter: vercel({
-    imageService: true,
-    webAnalytics: {
-      enabled: true,
-    },
-  })
+  adapter: node({
+    mode: 'standalone',
+  }),
+  output: 'server'
 });
