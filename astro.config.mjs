@@ -1,7 +1,7 @@
 import { defineConfig } from 'astro/config';
 import vue from '@astrojs/vue';
 import tailwind from '@astrojs/tailwind';
-import vercelServerLess from '@astrojs/vercel/serverless';
+import vercel from '@astrojs/vercel';
 
 export default defineConfig({
   site: 'https://ChristopherBF.github.io',
@@ -16,5 +16,10 @@ export default defineConfig({
     }
   },
   output: 'server',
-  adapter: vercelServerLess()
+  adapter: vercel({
+    imageService: true,
+    webAnalytics: {
+      enabled: true,
+    },
+  })
 });
