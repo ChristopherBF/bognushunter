@@ -7,7 +7,7 @@ import { getCurrentUser } from '../lib/auth';
 const user = await getCurrentUser(Astro.cookies);
 
 // If already authenticated, redirect to home page
-if (user) {
+if (user.user_metadata.name === 'Kalven013' || user.user_metadata.name === 'Kakaocharles' || user.user_metadata.name === 'HeatoNcs') {
   return Astro.redirect('/bognushunter');
 }
 ---
