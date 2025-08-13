@@ -16,8 +16,10 @@ export default defineConfig({
       include: ['vue']
     }
   },
-  adapter: node({
-    mode: 'standalone',
-  }),
-  output: 'server'
+  output: 'server',
+  adapter: node({ mode: 'standalone' }),
+  server: {
+    port: 8080,
+    host: true
+  }
 });

@@ -13,7 +13,7 @@ client.connect();
 
 const gameQueue = [];
 let isProcessingQueue = false;
-const eventId = axios.get('http://localhost:4321/api/first-event').then(response => response.data.eventId);
+const eventId = axios.get('http://192.168.0.223:8080').then(response => response.data.eventId);
 
 client.on('message', (channel, tags, message, self) => {
   console.log(`${tags['display-name']}: ${message}`);
@@ -52,7 +52,7 @@ function processGameQueue() {
   
   // Process the item
   console.log(eventId)
-  axios.post('http://localhost:4321/api/game', { search: keyword, eventId: eventId })
+  axios.post('http://192.168.0.223:8080', { search: keyword, eventId: eventId })
     .then(response => {
       console.log('Game processed:', response);
       
