@@ -14,8 +14,9 @@ if (!user) {
   return Astro.redirect('/bognushunter/login');
 }
 
-if (user.user_metadata.name === 'Kalven013' || user.user_metadata.name === 'Kakaocharles' || user.user_metadata.name === 'HeatoNcs') {
-  return Astro.redirect('/bognushunter/login');
+if (user) {
+  console.log(user);
+  return Astro.redirect('/bognushunter/admin');
 }
 
 // Default event ID
