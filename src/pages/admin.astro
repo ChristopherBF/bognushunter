@@ -14,7 +14,11 @@ if (!user) {
   return Astro.redirect('/bognushunter/login');
 }
 
-if (user?.user_metadata?.full_name === 'Kalven013' || user?.user_metadata?.full_name === 'Kakaocharles' || user?.user_metadata?.full_name === 'HeatoNcs') {
+if (user?.user_metadata?.full_name !== 'Kalven013' || user?.user_metadata?.full_name !== 'Kakaocharles' || user?.user_metadata?.full_name !== 'HeatoNcs') {
+  console.log(user?.user_metadata?.full_name);
+  return Astro.redirect('/bognushunter/suggestions');
+}
+
 // Default event ID
 const defaultEventId = "123e4567-e89b-12d3-a456-426614174000";
 const eventId = Astro.props.eventId || defaultEventId;
@@ -24,5 +28,3 @@ console.log('[admin.astro] Event ID:', Astro.props);
 <Layout title="Admin Dashboard" isAdmin>
   <AdminDashboard client:load eventId={eventId} userId={user.id} />
 </Layout>
-}
-
