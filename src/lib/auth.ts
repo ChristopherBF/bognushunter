@@ -9,7 +9,7 @@ export async function signInWithTwitch() {
     provider: 'twitch',
     options: {
       // window.location.origin is only available on client
-      redirectTo: `${window.location.origin}/bognushunter/callback`
+      redirectTo: `${window.location.origin}${import.meta.env.BASE_URL}callback`
     }
   });
   if (error) {
@@ -70,7 +70,7 @@ export async function requireAuth(astroContext: { cookies: AstroCookies, redirec
   const user = await getCurrentUser(cookies); // Pass cookies here
   console.log('[auth.ts] User from requireAuth (server-side):', user ? user.id : null);
   if (!user) {
-    return redirect('/bognushunter/login');
+    return redirect(`${import.meta.env.BASE_URL}login`);
   }
   return { user }; // Return user if authenticated
 }

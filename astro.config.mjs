@@ -4,7 +4,7 @@ import tailwind from '@astrojs/tailwind';
 import node from '@astrojs/node';
 
 export default defineConfig({
-  site: 'https://ChristopherBF.github.io',
+  site: 'http://192.128.0.129:8080',
   // Ensure base path works locally and on GitHub Pages (must start and end with '/')
   base: '/bognushunter/',
   integrations: [

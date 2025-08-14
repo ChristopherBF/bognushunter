@@ -1,6 +1,7 @@
 ---
 export const prerender = false;
 import { getSupabaseClient } from '../lib/supabase';
+const BASE_URL = import.meta.env.BASE_URL;
 
 // Get Supabase client with cookies for server-side auth
 const supabase = getSupabaseClient(Astro.cookies);
@@ -64,6 +65,7 @@ if (code) {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width" />
     <title>Authentication Callback</title>
+    <meta http-equiv="refresh" content={"1;url=" + BASE_URL} />
     <style>
       body {
         font-family:
@@ -114,11 +116,5 @@ if (code) {
       <div class="loader"></div>
     </div>
 
-    <script>
-      // Redirect to home page after a short delay
-      setTimeout(() => {
-        window.location.href = "/bognushunter/";
-      }, 1500);
-    </script>
   </body>
 </html>

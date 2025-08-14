@@ -5,10 +5,13 @@ import {
 } from '@supabase/ssr';
 import type { AstroCookies } from 'astro';
 
-// Default to these values if environment variables aren't available
-// In production, these would be set properly
-export const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://pectjcgoyjxgrlssbfuy.supabase.co';
-export const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBlY3RqY2dveWp4Z3Jsc3NiZnV5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDg2ODE5MjcsImV4cCI6MjA2NDI1NzkyN30.vVeI86SPCt14PO3DydhEd6kwQmH0OGTXsreD0RGvkrw';
+// Read from PUBLIC_ env vars (exposed to client by Astro)
+export const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL as string | undefined;
+export const supabaseAnonKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY as string | undefined;
+
+if (!supabaseUrl || !supabaseAnonKey) {
+  throw new Error('[supabase.ts] Missing PUBLIC_SUPABASE_URL or PUBLIC_SUPABASE_ANON_KEY environment variables');
+}
 
 // Client-side Supabase client (can be used in <script> tags or .ts/.js files run on the client)
 // This is the one that will be imported as `supabase` directly.
